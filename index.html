@@ -18,6 +18,21 @@ body {
     user-select: none;
 }
 
+/* ── iPad 10" landscape (1024px): zoom to 90% ── */
+@media screen and (max-width: 1100px) and (min-width: 900px) {
+    body { zoom: 0.90; padding: 16px 12px; }
+    @supports not (zoom: 1) {
+        body { transform: scale(0.90); transform-origin: top center; }
+    }
+}
+/* ── iPad 10" portrait (768px): zoom to 78% ── */
+@media screen and (max-width: 899px) and (min-width: 600px) {
+    body { zoom: 0.78; padding: 10px 8px; }
+    @supports not (zoom: 1) {
+        body { transform: scale(0.78); transform-origin: top center; }
+    }
+}
+
 .task-container {
     background: #fff;
     border: 2px solid #bbb;
@@ -238,10 +253,10 @@ canvas { display: block; }
 <!-- ══ MOBILE WARNING ══ -->
 <div id="mobileWarning">
   <div class="mw-icon">💻</div>
-  <h2>请使用电脑参与本研究</h2>
-  <p>本研究需要使用<strong style="color:#fff;">电脑（Windows 或 macOS）</strong>进行操作。<br>
-     手机或平板设备无法完成实验任务。<br><br>请在电脑浏览器中打开本链接后再开始。</p>
-  <button onclick="document.getElementById('mobileWarning').style.display='none'">我已使用电脑，继续参与 →</button>
+  <h2>请使用电脑或平板电脑参与本研究</h2>
+  <p>本研究需要使用<strong style="color:#fff;">电脑或平板电脑</strong>进行操作。<br>
+     手机屏幕过小，无法完成实验任务。<br><br>请在电脑或平板电脑的浏览器中打开本链接后再开始。</p>
+  <button onclick="document.getElementById('mobileWarning').style.display='none'">我已使用电脑或平板，继续参与 →</button>
 </div>
 
 <!-- ══ DEV MODE INDICATOR ══ -->
@@ -406,6 +421,9 @@ canvas { display: block; }
   <div class="q-page center-page">
     <h2>第 <span id="edTransNum"></span> 组选择已完成 ✓</h2>
     <p>接下来请继续完成第 <span id="edTransNextNum"></span> 组选择。<br>准备好后，点击下方按钮开始。</p>
+    <p style="font-size:13px;color:#e07020;margin-top:12px;">
+      ⚠️ 接下来描述的群体与前一个任务所涉及的群体<b>无关</b>。
+    </p>
     <div class="q-nav" style="justify-content:center;">
       <button class="q-btn q-btn-next" id="edTransNextBtn">开始下一组 →</button>
     </div>
@@ -421,6 +439,9 @@ canvas { display: block; }
       请根据你在学校里<b>实际的人际交往情况</b>，选择哪张图更像你。<br><br>
       每道题呈现两张图（<b>A</b> 和 <b>B</b>），图中的圆圈代表人，连线代表朋友关系。<br>
       蓝色的那个圆圈（标有"<b>我</b>"）代表你。
+    </p>
+    <p style="font-size:13px;color:#e07020;margin-top:4px;">
+      ⚠️ 本部分描述的群体与前面任务所涉及的群体<b>无关</b>。
     </p>
     <div class="q-nav" style="justify-content:center;">
       <button class="q-btn q-btn-next" id="btnEDStart">开始 →</button>
@@ -501,8 +522,8 @@ canvas { display: block; }
 // ── Mobile detection ──────────────────────────────
 (function(){
     var ua=navigator.userAgent;
-    var isMobile=/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i.test(ua);
-    if(isMobile||window.innerWidth<900) document.getElementById("mobileWarning").style.display="flex";
+    var isPhone=/Android.*Mobile|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    if(isPhone||window.innerWidth<600) document.getElementById("mobileWarning").style.display="flex";
 })();
 
 // ── Supabase API ──────────────────────────────────
@@ -548,6 +569,7 @@ var meIndex=0;
 var N=10, REQUIRED_EDGES=12;
 var placedNodes=[], edges={}, edgeCount=0, selectedNode=null;
 var draggingCanvas=null, dragMoved=false, trayDragging=null;
+var dragStartX=0, dragStartY=0;  // touch drag start position for threshold
 var activeTray=null, activeCanvasWrapper=null, activeCtx=null;
 var activeCW=0, activeCH=0, activeCanvas=null;
 
@@ -555,6 +577,7 @@ var activeCW=0, activeCH=0, activeCanvas=null;
 var TUT_N=6;
 var tutPlacedNodes=[], tutEdges={}, tutEdgeCount=0, tutSelectedNode=null;
 var tutDraggingCanvas=null, tutDragMoved=false, tutTrayDragging=null;
+var tutDragStartX=0, tutDragStartY=0;
 var tutCtx, tutCanvas, tutCW, tutCH;
 var tutStep=0; // 0=place all, 1=draw edge, 2=delete edge, 3=move node, 4=done
 var tutOperationLocked=false; // true while bubble is showing; blocks canvas interaction
@@ -961,7 +984,8 @@ function onTutCanvasDown(e){
     var p=getPointer(e), r=tutCanvas.getBoundingClientRect();
     var x=p.clientX-r.left, y=p.clientY-r.top;
     var hit=getTutNodeAt(x,y);
-    if(hit!==null){ tutDraggingCanvas=hit; tutDragMoved=false; e.preventDefault(); }
+    if(hit!==null){ tutDraggingCanvas=hit; tutDragMoved=false;
+        tutDragStartX=x; tutDragStartY=y; e.preventDefault(); }
 }
 
 function getTutNodeAt(x,y){
@@ -1037,23 +1061,30 @@ function onPointerMove(e){
         document.getElementById("canvasWrapper").classList.toggle("drag-over",over); e.preventDefault();
     }
 
-    // canvas dragging (tutorial)
     if(tutDraggingCanvas!==null){
         var r=tutCanvas.getBoundingClientRect(), x=p.clientX-r.left, y=p.clientY-r.top;
-        if(Math.abs(x-tutPlacedNodes[tutDraggingCanvas].x)>3||Math.abs(y-tutPlacedNodes[tutDraggingCanvas].y)>3) tutDragMoved=true;
-        tutPlacedNodes[tutDraggingCanvas].x=Math.max(ICON_R+2,Math.min(tutCW-ICON_R-2,x));
-        tutPlacedNodes[tutDraggingCanvas].y=Math.max(ICON_R+2,Math.min(tutCH-ICON_R-2,y));
-        tutDraw(); e.preventDefault();
+        var distFromStart=Math.sqrt(Math.pow(x-tutDragStartX,2)+Math.pow(y-tutDragStartY,2));
+        if(distFromStart>12) tutDragMoved=true;
+        if(tutDragMoved){
+            tutPlacedNodes[tutDraggingCanvas].x=Math.max(ICON_R+2,Math.min(tutCW-ICON_R-2,x));
+            tutPlacedNodes[tutDraggingCanvas].y=Math.max(ICON_R+2,Math.min(tutCH-ICON_R-2,y));
+            tutDraw();
+        }
+        e.preventDefault();
     }
 
     // canvas dragging (formal)
     if(draggingCanvas!==null){
         var mainCanvas=document.getElementById("mainCanvas");
         var r=mainCanvas.getBoundingClientRect(), x=p.clientX-r.left, y=p.clientY-r.top;
-        if(Math.abs(x-placedNodes[draggingCanvas].x)>3||Math.abs(y-placedNodes[draggingCanvas].y)>3) dragMoved=true;
-        placedNodes[draggingCanvas].x=Math.max(ICON_R+2,Math.min(formalCW-ICON_R-2,x));
-        placedNodes[draggingCanvas].y=Math.max(ICON_R+2,Math.min(formalCH-ICON_R-2,y));
-        formalDraw(); e.preventDefault();
+        var distFromStart=Math.sqrt(Math.pow(x-dragStartX,2)+Math.pow(y-dragStartY,2));
+        if(distFromStart>12) dragMoved=true;
+        if(dragMoved){
+            placedNodes[draggingCanvas].x=Math.max(ICON_R+2,Math.min(formalCW-ICON_R-2,x));
+            placedNodes[draggingCanvas].y=Math.max(ICON_R+2,Math.min(formalCH-ICON_R-2,y));
+            formalDraw();
+        }
+        e.preventDefault();
     }
 }
 
@@ -1178,7 +1209,8 @@ function onFormalCanvasDown(e){
     var r=mainCanvas.getBoundingClientRect();
     var x=p.clientX-r.left, y=p.clientY-r.top;
     var hit=getFormalNodeAt(x,y);
-    if(hit!==null){ draggingCanvas=hit; dragMoved=false; e.preventDefault(); }
+    if(hit!==null){ draggingCanvas=hit; dragMoved=false;
+        dragStartX=x; dragStartY=y; e.preventDefault(); }
 }
 
 function getFormalNodeAt(x,y){
@@ -1436,7 +1468,7 @@ function edRenderRound() {
 
     // question + subtext
     document.getElementById('edQuestion').textContent = '请根据你在学校里实际的人际交往情况，选择哪张图更像你。';
-    document.getElementById('edSubtext').textContent  = '（图中共 '+s.N+' 人）';
+    document.getElementById('edSubtext').textContent  = '（图中共 '+s.N+' 人）　※ 本题描述的群体与前一个任务所涉及的群体无关';
 
     // DC warning
     document.getElementById('dcWarnBar').style.display = 'none';
