@@ -1,0 +1,2240 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>研究者后台 — 人际网络实验（初中版 · Session 2）</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Microsoft YaHei","PingFang SC",Arial,sans-serif; background:#f0f2f5; min-height:100vh; color:#222; }
+
+/* ── Login ── */
+#loginPage { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+.login-card { background:#fff; border-radius:8px; box-shadow:0 4px 24px rgba(0,0,0,.12); padding:48px 44px; width:380px; text-align:center; }
+.login-card h1 { font-size:20px; margin-bottom:6px; color:#222; }
+.login-card p  { font-size:13px; color:#888; margin-bottom:28px; }
+.login-card input { width:100%; padding:10px 14px; font-size:14px; font-family:inherit; border:1.5px solid #ccc; border-radius:4px; outline:none; margin-bottom:14px; transition:border-color .15s; }
+.login-card input:focus { border-color:#4a90d9; }
+.btn-primary { width:100%; padding:11px 0; font-size:15px; font-family:inherit; font-weight:bold; background:#4a90d9; color:#fff; border:none; border-radius:4px; cursor:pointer; }
+.btn-primary:hover { background:#3278c0; }
+.login-err { color:#d00; font-size:13px; margin-top:10px; min-height:18px; }
+
+/* ── Dashboard ── */
+#dashboard { display:none; }
+.top-nav { background:#fff; border-bottom:1px solid #ddd; padding:14px 32px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+.top-nav h1 { font-size:17px; color:#333; }
+.top-nav-right { display:flex; gap:10px; align-items:center; }
+.nav-count { font-size:13px; color:#888; }
+.btn { padding:8px 18px; font-size:13px; font-family:inherit; font-weight:bold; border-radius:4px; border:none; cursor:pointer; transition:background .15s; }
+.btn-green  { background:#7ecb5a; color:#fff; } .btn-green:hover  { background:#6aba47; }
+.btn-blue   { background:#4a90d9; color:#fff; } .btn-blue:hover   { background:#3278c0; }
+.btn-orange { background:#f0a030; color:#fff; } .btn-orange:hover { background:#d8901a; }
+.btn-small  { padding:4px 10px; font-size:12px; }
+.main-wrap { padding:28px 32px; }
+
+/* stats */
+.stats-row { display:flex; gap:16px; margin-bottom:24px; flex-wrap:wrap; }
+.stat-card { background:#fff; border-radius:6px; padding:18px 24px; box-shadow:0 1px 4px rgba(0,0,0,.08); min-width:140px; }
+.stat-card .val { font-size:28px; font-weight:bold; color:#4a90d9; }
+.stat-card .lbl { font-size:12px; color:#888; margin-top:2px; }
+
+/* tabs */
+.tabs { display:flex; gap:0; margin-bottom:0; border-bottom:2px solid #e0e4ea; }
+.tab-btn { padding:10px 22px; font-size:13px; font-family:inherit; font-weight:bold; border:none; background:none; cursor:pointer; color:#888; border-bottom:3px solid transparent; margin-bottom:-2px; transition:color .15s; }
+.tab-btn.active { color:#4a90d9; border-bottom-color:#4a90d9; }
+
+/* table */
+.table-card { background:#fff; border-radius:6px; box-shadow:0 1px 4px rgba(0,0,0,.08); overflow:hidden; }
+.table-toolbar { padding:14px 18px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.table-toolbar input { padding:7px 12px; font-size:13px; font-family:inherit; border:1.5px solid #ddd; border-radius:4px; outline:none; width:200px; }
+.table-toolbar input:focus { border-color:#4a90d9; }
+.table-toolbar select { padding:7px 10px; font-size:13px; font-family:inherit; border:1.5px solid #ddd; border-radius:4px; outline:none; }
+.table-toolbar select:focus { border-color:#4a90d9; }
+.table-scroll { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+thead th { background:#f5f7fa; padding:10px 12px; text-align:left; font-weight:bold; color:#555; border-bottom:2px solid #e8eaed; white-space:nowrap; }
+tbody td { padding:9px 12px; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
+tbody tr:hover { background:#fafbff; }
+tbody tr:last-child td { border-bottom:none; }
+.badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:bold; }
+.badge-blue   { background:#ddeeff; color:#1a5fa0; }
+.badge-green  { background:#ddf5dd; color:#1a6a1a; }
+.badge-orange { background:#fff0dd; color:#a06000; }
+
+/* modal */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; align-items:center; justify-content:center; }
+.modal-overlay.open { display:flex; }
+.modal-box { background:#fff; border-radius:8px; padding:32px; max-width:620px; width:92%; max-height:85vh; overflow-y:auto; }
+.modal-box h2 { font-size:16px; margin-bottom:16px; }
+.modal-close { margin-top:20px; padding:9px 0; width:100%; background:#eee; border:none; border-radius:4px; cursor:pointer; font-size:14px; font-family:inherit; }
+.modal-close:hover { background:#ddd; }
+.detail-row { display:flex; gap:8px; margin-bottom:8px; font-size:13px; }
+.detail-row .lbl { color:#888; width:180px; flex-shrink:0; }
+.detail-row .val { color:#222; font-weight:bold; }
+.section-title { font-weight:bold; font-size:13px; color:#4a90d9; margin:14px 0 8px; }
+.section-sep { border:none; border-top:1px solid #eee; margin:12px 0; }
+.png-btn { padding:10px 18px; background:#4a90d9; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px; font-weight:bold; }
+.empty { padding:60px; text-align:center; color:#bbb; font-size:15px; }
+
+/* upload modal */
+.err-msg { color:#d04020; font-size:11px; margin-top:3px; }
+
+/* ── Organized Network Page ── */
+.org-controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:16px 22px; border-bottom:1px solid #eee; background:#f7f9fc; }
+.org-controls select, .org-controls input { padding:7px 10px; font-size:13px; font-family:inherit; border:1.5px solid #ddd; border-radius:4px; outline:none; }
+.org-grid { display:flex; flex-wrap:wrap; gap:16px; padding:20px 22px; }
+.org-card { width:300px; background:#fff; border:1.5px solid #dde3ec; border-radius:8px; overflow:hidden; flex-shrink:0; }
+.org-card-header { padding:8px 12px; background:#f0f6ff; border-bottom:1px solid #e0eaf5; display:flex; justify-content:space-between; align-items:center; }
+.org-card-header span { font-size:12px; color:#555; font-weight:bold; }
+.org-card-header .deg-badge { background:#4a90d9; color:#fff; border-radius:10px; padding:2px 8px; font-size:11px; }
+.org-canvas-row { display:flex; }
+.org-canvas-wrap { flex:1; text-align:center; border-right:1px solid #eee; }
+.org-canvas-wrap:last-child { border-right:none; }
+.org-canvas-label { font-size:10px; color:#aaa; padding:3px 0 5px; }
+.org-compare-btn { width:100%; padding:6px 0; font-size:12px; font-family:inherit; background:#f5f7fa; border:none; border-top:1px solid #eee; cursor:pointer; color:#4a90d9; font-weight:bold; }
+.org-compare-btn:hover { background:#eef4ff; }
+
+/* ── Representative Graph Page ── */
+.rep-page { padding:20px 22px; }
+.rep-n-tabs { display:flex; gap:8px; margin-bottom:20px; }
+.rep-n-btn { padding:8px 22px; font-size:13px; font-family:inherit; font-weight:bold; border:2px solid #4a90d9; border-radius:20px; background:#fff; color:#4a90d9; cursor:pointer; transition:all .15s; }
+.rep-n-btn.active { background:#4a90d9; color:#fff; }
+.rep-group { margin-bottom:32px; }
+.rep-group-header { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; background:#fff4ee; border-left:4px solid #e07030; border-radius:4px; margin-bottom:14px; }
+.rep-group-header h3 { font-size:14px; color:#c05010; margin:0; }
+.rep-row { display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap; }
+.rep-card { text-align:center; }
+.rep-card canvas { border:1.5px solid #dde3ec; border-radius:6px; display:block; }
+.rep-card-label { font-size:11px; color:#888; margin-top:5px; line-height:1.5; }
+.rep-card.synthetic canvas { border-color:#e07030; border-width:2.5px; }
+.rep-card.best canvas { border-color:#4a90d9; border-width:2.5px; }
+.rep-card-tag { display:inline-block; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:bold; margin-bottom:4px; }
+.rep-card-tag.syn { background:#fff0e0; color:#c05010; }
+.rep-card-tag.best { background:#ddeeff; color:#1a5fa0; }
+.rep-runners { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+.rep-runner { text-align:center; cursor:pointer; }
+.rep-runner canvas { border:1px solid #eee; border-radius:4px; display:block; }
+.rep-runner canvas:hover { border-color:#4a90d9; }
+.rep-runner-label { font-size:10px; color:#aaa; margin-top:3px; }
+
+/* draggable force canvas */
+.force-canvas-wrap { position:relative; display:inline-block; }
+.force-canvas-wrap canvas { cursor:grab; display:block; }
+.force-canvas-wrap canvas:active { cursor:grabbing; }
+.force-dl-btn {
+    position:absolute; bottom:4px; right:4px;
+    padding:3px 8px; font-size:10px; font-family:inherit;
+    background:rgba(74,144,217,0.85); color:#fff; border:none;
+    border-radius:3px; cursor:pointer; font-weight:bold;
+    line-height:1.4;
+}
+.force-dl-btn:hover { background:#3278c0; }
+
+/* degree gallery */
+.deg-gallery { padding:20px 22px; }
+.deg-n-tabs  { display:flex; gap:8px; margin-bottom:20px; }
+.deg-n-btn   { padding:8px 22px; font-size:13px; font-family:inherit; font-weight:bold;
+               border:2px solid #4a90d9; border-radius:20px; background:#fff;
+               color:#4a90d9; cursor:pointer; transition:all .15s; }
+.deg-n-btn.active { background:#4a90d9; color:#fff; }
+.deg-group   { margin-bottom:28px; }
+.deg-group-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 16px; background:#f0f6ff;
+    border-left:4px solid #4a90d9; border-radius:4px;
+    margin-bottom:12px;
+}
+.deg-group-header h3 { font-size:14px; color:#1a5fa0; margin:0; }
+.deg-group-header span { font-size:12px; color:#888; }
+.deg-thumbs  { display:flex; flex-wrap:wrap; gap:16px; }
+.deg-thumb   {
+    width:280px; background:#fff; border:1.5px solid #dde3ec;
+    border-radius:6px; overflow:hidden; cursor:pointer;
+    transition:box-shadow .15s; flex-shrink:0;
+}
+.deg-thumb:hover { box-shadow:0 4px 16px rgba(74,144,217,.25); border-color:#4a90d9; }
+.deg-thumb canvas { display:block; width:100%; height:190px; object-fit:cover; }
+.deg-thumb-label {
+    padding:5px 8px; font-size:11px; color:#555;
+    border-top:1px solid #eee; line-height:1.5;
+}
+.deg-empty { color:#bbb; font-size:13px; padding:10px 0; }
+
+/* lightbox */
+#lightbox {
+    display:none; position:fixed; inset:0; z-index:600;
+    background:rgba(0,0,0,.82); align-items:center; justify-content:center;
+    flex-direction:column; gap:12px;
+}
+#lightbox.open { display:flex; }
+#lightboxCanvas { max-width:90vw; max-height:80vh; border-radius:4px; }
+#lightboxLabel  { color:#fff; font-size:13px; }
+#lightboxClose  { position:absolute; top:20px; right:28px; color:#fff; font-size:28px;
+                  cursor:pointer; background:none; border:none; line-height:1; }
+#lightboxDl     { padding:9px 24px; background:#4a90d9; color:#fff; border:none;
+                  border-radius:4px; cursor:pointer; font-size:14px; font-family:inherit;
+                  font-weight:bold; }
+
+/* sortable headers */
+thead th.sortable { cursor:pointer; user-select:none; }
+thead th.sortable:hover { background:#eaecf0; }
+thead th .sort-icon { margin-left:4px; color:#aaa; font-size:11px; }
+thead th.sort-asc  .sort-icon { color:#4a90d9; }
+thead th.sort-desc .sort-icon { color:#4a90d9; }
+
+/* row checkbox */
+.row-check { width:16px; height:16px; cursor:pointer; accent-color:#4a90d9; }
+th.check-col, td.check-col { width:36px; text-align:center; padding:6px 4px; }
+
+/* bulk action bar */
+#bulkBar {
+    display:none; position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:#1a2a3a; color:#fff; border-radius:10px;
+    padding:12px 24px; display:none; align-items:center; gap:16px;
+    box-shadow:0 6px 28px rgba(0,0,0,.35); z-index:500; white-space:nowrap;
+    font-size:14px;
+}
+#bulkBar.show { display:flex; }
+#bulkBar .bulk-count { font-weight:bold; color:#7ecb5a; }
+#bulkBar select { padding:6px 10px; font-size:13px; border-radius:4px; border:none; outline:none; }
+#bulkBar .btn { padding:8px 18px; font-size:13px; }
+
+/* PNG size filter in toolbar */
+.png-filter { display:flex; align-items:center; gap:6px; font-size:13px; color:#555; }
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="loginPage">
+  <div class="login-card">
+    <h1>研究者后台</h1>
+    <p>人际关系网络构建实验（初中版）· 数据管理</p>
+    <input type="password" id="pwInput" placeholder="请输入管理员密码">
+    <button class="btn-primary" id="loginBtn">登录</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ══ DASHBOARD ══ -->
+<div id="dashboard">
+  <div class="top-nav">
+    <h1>📊 实验数据后台 <span style="font-size:13px;font-weight:normal;color:#aaa;margin-left:8px;">初中版 · Session 2</span></h1>
+    <div class="top-nav-right">
+      <span class="nav-count" id="navCount"></span>
+      <button class="btn btn-blue"   id="refreshBtn">↻ 刷新</button>
+      <button class="btn btn-orange" id="uploadZipBtn">⬆ 上传ZIP备份</button>
+      <button class="btn btn-green"  id="dlAllCsvBtn">⬇ 下载全部数据（CSV）</button>
+    </div>
+  </div>
+
+  <div class="main-wrap">
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card"><div class="val" id="statTotal">—</div><div class="lbl">总被试数</div></div>
+      <div class="stat-card"><div class="val" id="statToday">—</div><div class="lbl">今日新增</div></div>
+      <div class="stat-card" id="statOrderWrap" style="min-width:320px;"></div>
+    </div>
+
+    <!-- Tabs + Table -->
+    <div class="table-card">
+      <div class="table-toolbar">
+        <input type="checkbox" id="selectAll" class="row-check" title="全选/取消全选">
+        <input type="text" id="searchInput" placeholder="搜索学号或班级…">
+        <select id="filterClass">
+          <option value="">全部班级</option>
+        </select>
+        <div class="png-filter">
+          批量下载图片筛选：
+          <select id="filterPngN">
+            <option value="">全部网络大小</option>
+            <option value="6">N=6</option>
+            <option value="8">N=8</option>
+            <option value="10">N=10</option>
+          </select>
+        </div>
+        <span style="font-size:13px;color:#888;" id="filteredCount"></span>
+      </div>
+
+      <!-- Bulk action floating bar -->
+      <div id="bulkBar">
+        <span>已选 <span class="bulk-count" id="bulkCount">0</span> 人</span>
+        <select id="bulkNSelect">
+          <option value="all">下载全部3张图</option>
+          <option value="6">只下载 N=6</option>
+          <option value="8">只下载 N=8</option>
+          <option value="10">只下载 N=10</option>
+        </select>
+        <button class="btn btn-green" id="bulkDlBtn">⬇ 批量下载PNG</button>
+        <button class="btn btn-orange" id="bulkCancelBtn" style="background:#666;">✕ 取消选择</button>
+      </div>
+
+      <div style="padding:0 18px;background:#fff;border-bottom:1px solid #eee;">
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="basic">基本信息</button>
+          <button class="tab-btn" data-tab="network">网络指标</button>
+          <button class="tab-btn" data-tab="ed">逼近法结果</button>
+          <button class="tab-btn" data-tab="gallery">度数图册</button>
+          <button class="tab-btn" data-tab="organized">整洁网络图</button>
+          <button class="tab-btn" data-tab="representative">代表性图</button>
+        </div>
+      </div>
+
+      <div class="table-scroll">
+        <!-- TAB: 基本信息 -->
+        <table id="tabBasic">
+          <thead><tr>
+            <th class="check-col"><input type="checkbox" id="selectAllBasic" class="row-check"></th>
+            <th class="sortable" data-key="idx">#</th>
+            <th class="sortable" data-key="created_at">提交时间 <span class="sort-icon">⇅</span></th>
+            <th class="sortable" data-key="class_name">班级 <span class="sort-icon">⇅</span></th>
+            <th class="sortable" data-key="student_id">学号 <span class="sort-icon">⇅</span></th>
+            <th class="sortable" data-key="order_num">顺序 <span class="sort-icon">⇅</span></th>
+            <th>开始时间</th>
+            <th>练习用时</th>
+            <th>N6用时</th><th>N8用时</th><th>N10用时</th>
+            <th>正式任务总时</th><th>全程总时</th>
+            <th>图片</th><th>详情</th>
+          </tr></thead>
+          <tbody id="tbodyBasic"></tbody>
+        </table>
+
+        <!-- TAB: 网络指标 -->
+        <table id="tabNetwork" style="display:none;">
+          <thead><tr>
+            <th class="check-col"><input type="checkbox" id="selectAllNetwork" class="row-check"></th>
+            <th class="sortable" data-key="idx">#</th>
+            <th class="sortable" data-key="class_name">班级 <span class="sort-icon">⇅</span></th>
+            <th class="sortable" data-key="student_id">学号 <span class="sort-icon">⇅</span></th>
+            <th>呈现顺序</th>
+            <th class="sortable" data-key="net_ego_degree_n6">N6 度数 <span class="sort-icon">⇅</span></th>
+            <th class="sortable" data-key="net_ego_normalized_n6">N6 中心性 <span class="sort-icon">⇅</span></th>
+            <th class="sortable" data-key="net_global_density_n6">N6 密度 <span class="sort-icon">⇅</span></th>
+            <th class="sortable" data-key="net_ego_position_n6">N6 位置 <span class="sort-icon">⇅</span></th>
+            <th class="sortable" data-key="net_ego_degree_n8">N8 度数 <span class="sort-icon">⇅</span></th>
+            <th class="sortable" data-key="net_ego_normalized_n8">N8 中心性 <span class="sort-icon">⇅</span></th>
+            <th class="sortable" data-key="net_global_density_n8">N8 密度 <span class="sort-icon">⇅</span></th>
+            <th class="sortable" data-key="net_ego_position_n8">N8 位置 <span class="sort-icon">⇅</span></th>
+            <th class="sortable" data-key="net_ego_degree_n10">N10 度数 <span class="sort-icon">⇅</span></th>
+            <th class="sortable" data-key="net_ego_normalized_n10">N10 中心性 <span class="sort-icon">⇅</span></th>
+            <th class="sortable" data-key="net_global_density_n10">N10 密度 <span class="sort-icon">⇅</span></th>
+            <th class="sortable" data-key="net_ego_position_n10">N10 位置 <span class="sort-icon">⇅</span></th>
+            <th>图片</th><th>详情</th>
+          </tr></thead>
+          <tbody id="tbodyNetwork"></tbody>
+        </table>
+
+        <div class="empty" id="emptyState" style="display:none;">暂无数据</div>
+
+        <!-- TAB: 逼近法结果 -->
+        <table id="tabED" style="display:none;">
+          <thead><tr>
+            <th class="check-col"><input type="checkbox" id="selectAllED" class="row-check"></th>
+            <th class="sortable" data-key="idx">#</th>
+            <th class="sortable" data-key="class_name">班级 <span class="sort-icon">⇅</span></th>
+            <th class="sortable" data-key="student_id">学号 <span class="sort-icon">⇅</span></th>
+            <th>呈现顺序</th>
+            <th class="sortable" data-key="ed_final_k_n6">N6 结果 <span class="sort-icon">⇅</span></th>
+            <th>N6 确认</th>
+            <th>N6 选择路径</th>
+            <th class="sortable" data-key="ed_final_k_n8">N8 结果 <span class="sort-icon">⇅</span></th>
+            <th>N8 确认</th>
+            <th>N8 选择路径</th>
+            <th class="sortable" data-key="ed_final_k_n10">N10 结果 <span class="sort-icon">⇅</span></th>
+            <th>N10 确认</th>
+            <th>N10 选择路径</th>
+            <th>详情</th>
+          </tr></thead>
+          <tbody id="tbodyED"></tbody>
+        </table>
+
+        <!-- TAB: 度数图册 -->
+        <div id="tabGallery" style="display:none;">
+          <div class="deg-gallery">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+              <div class="deg-n-tabs">
+                <button class="deg-n-btn active" data-n="6">N = 6</button>
+                <button class="deg-n-btn" data-n="8">N = 8</button>
+                <button class="deg-n-btn" data-n="10">N = 10</button>
+              </div>
+              <button class="btn btn-green" id="galleryDlAllBtn">⬇ 打包下载当前全部图</button>
+            </div>
+            <div id="galleryContent"></div>
+          </div>
+        </div>
+
+        <!-- TAB: 整洁网络图 -->
+        <div id="tabOrganized" style="display:none;">
+          <div style="padding:14px 22px 0;background:#f7f9fc;border-bottom:1px solid #eee;">
+            <div style="background:#fff;border:1px solid #dde3ec;border-radius:6px;padding:12px 16px;margin-bottom:12px;font-size:13px;color:#555;line-height:1.8;">
+              <b>📐 整洁网络图的计算方法：</b>
+              原始图里节点的位置是被试随意摆放的，不代表任何含义。整洁网络图<b>完全忽略原始坐标</b>，只保留"谁和谁有连线"的关系，然后用 <b>Force-directed（引力/斥力）算法</b>重新自动排布位置：ego（"我"）固定在画布中心，其他节点之间相互排斥、连线节点相互吸引，经过多次迭代后收敛到一个清晰、均匀的布局。节点大小反映该节点的度数（连线越多越大）。
+            </div>
+          </div>
+          <div class="org-controls">
+            <label style="font-size:13px;font-weight:bold;color:#444;">网络大小：</label>
+            <select id="orgN">
+              <option value="6">N = 6</option>
+              <option value="8">N = 8</option>
+              <option value="10">N = 10</option>
+            </select>
+            <label style="font-size:13px;font-weight:bold;color:#444;">Ego Degree：</label>
+            <select id="orgDeg">
+              <option value="">全部</option>
+            </select>
+            <label style="font-size:13px;font-weight:bold;color:#444;">班级：</label>
+            <select id="orgClass">
+              <option value="">全部</option>
+            </select>
+            <button class="btn btn-blue" id="orgRenderBtn">生成</button>
+            <button class="btn btn-green" id="orgDlAllBtn">⬇ 下载全部整洁图</button>
+            <span style="font-size:12px;color:#888;" id="orgCount"></span>
+          </div>
+          <div class="org-grid" id="orgGrid">
+            <div style="color:#bbb;font-size:14px;padding:40px;">请选择参数后点击「生成」</div>
+          </div>
+        </div>
+
+        <!-- TAB: 代表性图 -->
+        <div id="tabRepresentative" style="display:none;">
+          <div class="rep-page">
+            <div style="background:#fff;border:1px solid #dde3ec;border-radius:6px;padding:12px 16px;margin-bottom:18px;font-size:13px;color:#555;line-height:1.8;">
+              <b>📊 代表性图的计算方法：</b>
+              由于节点编号（1、2、3…）对被试没有意义，不同人画的"节点1"可能完全不同，因此<b>不能直接比较边的有无</b>。我们改为比较每张图的<b>度数序列</b>——把所有节点（不含 ego）的连线数从小到大排列成一个序列，再计算组内所有被试的平均度数序列，最后找出<b>度数序列与平均值最接近</b>的那个真实被试，作为最佳代表图。这种方法只看网络的整体结构，不依赖节点标签。每张图下方同时展示用整洁化算法重新布局的版本，方便比较结构。
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div class="rep-n-tabs">
+                <button class="rep-n-btn active" data-n="6">N = 6</button>
+                <button class="rep-n-btn" data-n="8">N = 8</button>
+                <button class="rep-n-btn" data-n="10">N = 10</button>
+              </div>
+            </div>
+            <div id="repContent"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LIGHTBOX ══ -->
+<div id="lightbox">
+  <button id="lightboxClose">✕</button>
+  <canvas id="lightboxCanvas"></canvas>
+  <div id="lightboxLabel"></div>
+  <button id="lightboxDl">⬇ 下载此图</button>
+</div>
+
+<!-- ══ UPLOAD ZIP MODAL ══ -->
+<div class="modal-overlay" id="uploadModal">
+  <div class="modal-box" style="max-width:560px;">
+    <h2>⬆ 上传ZIP备份数据</h2>
+    <p style="font-size:13px;color:#888;margin-bottom:20px;line-height:1.7;">
+      将被试下载的 <code>.zip</code> 备份文件拖入下方区域，或点击选择文件。<br>
+      程序将自动解析 CSV 数据并上传至数据库。
+    </p>
+    <div id="zipDropZone" style="border:2.5px dashed #c0cfe0;border-radius:8px;padding:40px 20px;text-align:center;color:#aaa;font-size:14px;cursor:pointer;transition:all .2s;background:#fafcff;margin-bottom:16px;">
+      <div style="font-size:36px;margin-bottom:10px;">📦</div>
+      <div>拖入 ZIP 文件，或 <span style="color:#4a90d9;font-weight:bold;">点击选择</span></div>
+      <div style="font-size:12px;margin-top:6px;color:#bbb;">仅支持实验程序生成的 .zip 备份文件</div>
+      <input type="file" id="zipFileInput" accept=".zip" style="display:none;" multiple>
+    </div>
+    <div id="uploadQueue" style="display:none;margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:bold;color:#555;margin-bottom:8px;">待上传文件</div>
+      <div id="queueList" style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;"></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
+      <button class="btn btn-blue" id="doUploadBtn" style="display:none;">开始上传所有文件</button>
+      <button class="modal-close" id="uploadModalClose" style="margin:0;width:auto;padding:9px 24px;">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DETAIL MODAL ══ -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal-box">
+    <h2 id="modalTitle">被试详情</h2>
+    <div id="modalContent"></div>
+    <button class="modal-close" id="modalCloseBtn">关闭</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// CONFIG  ← 替换为实际数据库接口
+// ══════════════════════════════════════════════
+var DB_API_URL    = 'https://qlgedzdhzshqhqpiaula.supabase.co';
+var DB_API_KEY    = 'sb_publishable_6aQAwpMJWtz5H-QuHgc_RQ_ERsOeSip';
+var ADMIN_PASSWORD = 'Social_Network_and_Shyness@ZJUT_Psych';
+
+// ══════════════════════════════════════════════
+// DB CLIENT  (兼容 Supabase REST / 自定义后端)
+// ══════════════════════════════════════════════
+function makeDB(url, key) {
+    var headers = {
+        'apikey': key,
+        'Authorization': 'Bearer ' + key,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+    };
+    return {
+        select: async function(table) {
+            try {
+                var res = await fetch(url + '/rest/v1/' + table + '?select=*&order=created_at.desc&limit=10000', {
+                    headers: {
+                        'apikey': key,
+                        'Authorization': 'Bearer ' + key,
+                        'Accept': 'application/json'
+                    }
+                });
+                if (!res.ok) {
+                    var e = await res.json().catch(function(){ return {}; });
+                    return { data: null, error: { message: e.message || 'HTTP ' + res.status } };
+                }
+                return { data: await res.json(), error: null };
+            } catch(e) { return { data: null, error: { message: e.message } }; }
+        },
+        insert: async function(table, row) {
+            try {
+                var res = await fetch(url + '/rest/v1/' + table, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(row)
+                });
+                if (!res.ok) {
+                    var e = await res.json().catch(function(){ return {}; });
+                    return { error: { message: e.message || 'HTTP ' + res.status } };
+                }
+                return { error: null };
+            } catch(e) { return { error: { message: e.message } }; }
+        }
+    };
+}
+
+var db, allData = [], filteredData = [];
+var sortKey = "created_at", sortDir = -1; // -1=desc, 1=asc
+var selectedIds = new Set(); // set of record ids (or indices)
+
+// ── Login ──────────────────────────────────────────────
+document.getElementById("loginBtn").addEventListener("click", doLogin);
+document.getElementById("pwInput").addEventListener("keydown", function(e){ if(e.key==="Enter") doLogin(); });
+
+function doLogin() {
+    var pw = document.getElementById("pwInput").value;
+    if (pw !== ADMIN_PASSWORD) { document.getElementById("loginErr").textContent="密码错误，请重试。"; return; }
+    db = makeDB(DB_API_URL, DB_API_KEY);
+    document.getElementById("loginPage").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
+    loadData();
+}
+
+// ── Load data ──────────────────────────────────────────
+async function loadData() {
+    document.getElementById("navCount").textContent = "加载中…";
+    var result = await db.select("responses");
+    if (result.error) { alert("加载失败："+result.error.message); document.getElementById("navCount").textContent="加载失败"; return; }
+    allData = result.data || [];
+    buildClassFilter();
+    applyFilter();
+    updateStats();
+}
+document.getElementById("refreshBtn").addEventListener("click", loadData);
+
+// ── Class filter dropdown ──────────────────────────────
+function buildClassFilter() {
+    var sel = document.getElementById("filterClass");
+    var classes = {};
+    allData.forEach(function(r){ if(r.class_name) classes[r.class_name]=true; });
+    var cur = sel.value;
+    while(sel.options.length > 1) sel.remove(1);
+    Object.keys(classes).sort().forEach(function(c){
+        var opt=document.createElement("option"); opt.value=c; opt.textContent=c; sel.appendChild(opt);
+    });
+    sel.value = cur || "";
+}
+document.getElementById("filterClass").addEventListener("change", applyFilter);
+
+// ── Search & filter ────────────────────────────────────
+document.getElementById("searchInput").addEventListener("input", applyFilter);
+function applyFilter() {
+    var q   = document.getElementById("searchInput").value.trim().toLowerCase();
+    var cls = document.getElementById("filterClass").value;
+    filteredData = allData.filter(function(r){
+        var matchQ   = !q   || (r.student_id||"").toLowerCase().includes(q) || (r.class_name||"").toLowerCase().includes(q);
+        var matchCls = !cls || (r.class_name||"") === cls;
+        return matchQ && matchCls;
+    });
+    // apply sort
+    applySortToFiltered();
+    renderAll();
+    document.getElementById("filteredCount").textContent =
+        (q||cls) ? ("显示 "+filteredData.length+" / "+allData.length+" 条") : "";
+}
+
+function applySortToFiltered() {
+    var key = sortKey, dir = sortDir;
+    filteredData.sort(function(a, b) {
+        if (key === "idx") return 0; // preserve natural order
+        var va = a[key], vb = b[key];
+        if (va === null || va === undefined || va === "") va = "";
+        if (vb === null || vb === undefined || vb === "") vb = "";
+        // numeric comparison
+        if (!isNaN(parseFloat(va)) && !isNaN(parseFloat(vb))) {
+            return dir * (parseFloat(va) - parseFloat(vb));
+        }
+        // string comparison
+        return dir * String(va).localeCompare(String(vb), "zh-CN");
+    });
+}
+
+// ── Stats ──────────────────────────────────────────────
+function updateStats() {
+    var today = new Date().toISOString().slice(0,10);
+    document.getElementById("statTotal").textContent = allData.length;
+    document.getElementById("statToday").textContent = allData.filter(function(r){
+        return r.created_at && r.created_at.slice(0,10)===today;
+    }).length;
+    document.getElementById("navCount").textContent = "共 "+allData.length+" 条记录";
+    var oc={};
+    allData.forEach(function(r){ var o=r.order_num||"?"; oc[o]=(oc[o]||0)+1; });
+    var html='<div class="val" style="font-size:13px;line-height:2;">';
+    [1,2,3,4,5,6].forEach(function(o){ html+="顺序"+o+": <b>"+(oc[o]||0)+"</b>&nbsp;&nbsp;"; });
+    html+='</div><div class="lbl">各顺序分布</div>';
+    document.getElementById("statOrderWrap").innerHTML = html;
+}
+
+// ── Tabs ───────────────────────────────────────────────
+var currentTab = "basic";
+document.querySelectorAll(".tab-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+        document.querySelectorAll(".tab-btn").forEach(function(b){ b.classList.remove("active"); });
+        btn.classList.add("active");
+        currentTab = btn.dataset.tab;
+        document.getElementById("tabBasic").style.display         = currentTab==="basic"         ? "" : "none";
+        document.getElementById("tabNetwork").style.display       = currentTab==="network"       ? "" : "none";
+        document.getElementById("tabED").style.display            = currentTab==="ed"            ? "" : "none";
+        document.getElementById("tabGallery").style.display       = currentTab==="gallery"       ? "" : "none";
+        document.getElementById("tabOrganized").style.display     = currentTab==="organized"     ? "" : "none";
+        document.getElementById("tabRepresentative").style.display= currentTab==="representative"? "" : "none";
+        if (currentTab==="gallery")        renderGallery(currentGalleryN);
+        if (currentTab==="organized")      initOrgPage();
+        if (currentTab==="representative") initRepPage();
+    });
+});
+
+// ── Render ─────────────────────────────────────────────
+function n(v)  { return (v!==null&&v!==undefined&&v!=="") ? v : "—"; }
+function f2(v) { return (v!==null&&v!==undefined&&v!=="") ? parseFloat(v).toFixed(2) : "—"; }
+
+function posBadge(pos) {
+    if (!pos) return "—";
+    var cls = pos==="核心"?"badge-blue": pos==="半边缘"?"badge-orange":"badge-green";
+    return '<span class="badge '+cls+'">'+pos+'</span>';
+}
+
+function renderAll() {
+    var empty = document.getElementById("emptyState");
+    if (!filteredData.length) {
+        document.getElementById("tbodyBasic").innerHTML = "";
+        document.getElementById("tbodyNetwork").innerHTML = "";
+        empty.style.display = "block"; return;
+    }
+    empty.style.display = "none";
+    renderBasic(); renderNetwork(); renderED();
+}
+
+function renderBasic() {
+    var rows = filteredData.map(function(r, idx) {
+        var dt = r.created_at ? new Date(r.created_at).toLocaleString("zh-CN") : "—";
+        var st = r.started_at ? new Date(r.started_at).toLocaleString("zh-CN") : "—";
+        var hasPng = r.net_graph_t1||r.net_graph_t2||r.net_graph_t3;
+        var rid = r.id || idx;
+        var checked = selectedIds.has(rid) ? "checked" : "";
+        return '<tr>'+
+            '<td class="check-col"><input type="checkbox" class="row-check row-cb" data-id="'+rid+'" '+checked+'></td>'+
+            '<td>'+(idx+1)+'</td>'+
+            '<td style="white-space:nowrap;color:#888;font-size:11px;">'+dt+'</td>'+
+            '<td><b>'+n(r.class_name)+'</b></td>'+
+            '<td><b>'+n(r.student_id)+'</b></td>'+
+            '<td><span class="badge badge-blue">顺序'+n(r.order_num)+'</span></td>'+
+            '<td style="font-size:11px;white-space:nowrap;">'+st+'</td>'+
+            '<td>'+n(r.tutorial_duration)+'</td>'+
+            '<td>'+n(r.duration_n6)+'</td>'+
+            '<td>'+n(r.duration_n8)+'</td>'+
+            '<td>'+n(r.duration_n10)+'</td>'+
+            '<td>'+n(r.total_task_duration)+'</td>'+
+            '<td>'+n(r.duration_total)+'</td>'+
+            '<td>'+(hasPng ? '<button class="btn btn-small btn-green" onclick="showPNGs('+idx+')">图片</button>' : '—')+'</td>'+
+            '<td><button class="btn btn-small btn-blue" onclick="showDetail('+idx+')">详情</button></td>'+
+            '</tr>';
+    }).join("");
+    document.getElementById("tbodyBasic").innerHTML = rows;
+    bindCheckboxes();
+}
+
+function renderNetwork() {
+    var rows = filteredData.map(function(r, idx) {
+        var hasPng = r.net_graph_t1||r.net_graph_t2||r.net_graph_t3;
+        var rid = r.id || idx;
+        var checked = selectedIds.has(rid) ? "checked" : "";
+        return '<tr>'+
+            '<td class="check-col"><input type="checkbox" class="row-check row-cb" data-id="'+rid+'" '+checked+'></td>'+
+            '<td>'+(idx+1)+'</td>'+
+            '<td>'+n(r.class_name)+'</td>'+
+            '<td><b>'+n(r.student_id)+'</b></td>'+
+            '<td style="font-size:11px;color:#888;">'+n(r.task_order)+'</td>'+
+            '<td>'+n(r.net_ego_degree_n6)+'</td>'+
+            '<td>'+f2(r.net_ego_normalized_n6)+'</td>'+
+            '<td>'+f2(r.net_global_density_n6)+'</td>'+
+            '<td>'+posBadge(r.net_ego_position_n6)+'</td>'+
+            '<td>'+n(r.net_ego_degree_n8)+'</td>'+
+            '<td>'+f2(r.net_ego_normalized_n8)+'</td>'+
+            '<td>'+f2(r.net_global_density_n8)+'</td>'+
+            '<td>'+posBadge(r.net_ego_position_n8)+'</td>'+
+            '<td>'+n(r.net_ego_degree_n10)+'</td>'+
+            '<td>'+f2(r.net_ego_normalized_n10)+'</td>'+
+            '<td>'+f2(r.net_global_density_n10)+'</td>'+
+            '<td>'+posBadge(r.net_ego_position_n10)+'</td>'+
+            '<td>'+(hasPng ? '<button class="btn btn-small btn-green" onclick="showPNGs('+idx+')">图片</button>' : '—')+'</td>'+
+            '<td><button class="btn btn-small btn-blue" onclick="showDetail('+idx+')">详情</button></td>'+
+            '</tr>';
+    }).join("");
+    document.getElementById("tbodyNetwork").innerHTML = rows;
+    bindCheckboxes();
+}
+
+// ── PNG Preview ────────────────────────────────────────
+function showPNGs(idx) {
+    var r = filteredData[idx];
+    document.getElementById("modalTitle").textContent = "网络图 — "+n(r.class_name)+" 学号"+n(r.student_id);
+    var nodeNs = [];
+    if (r.task_order) r.task_order.split("|").forEach(function(s){ var m=s.match(/N(\d+)/); if(m) nodeNs.push(parseInt(m[1])); });
+    var html = '<div style="display:flex;gap:10px;flex-wrap:wrap;">';
+    [0,1,2].forEach(function(i){
+        var g = [r.net_graph_t1, r.net_graph_t2, r.net_graph_t3][i];
+        if (g) html += '<button class="png-btn" onclick="renderPreview('+idx+','+i+')">T'+(i+1)+' / N'+(nodeNs[i]||'?')+'</button>';
+    });
+    html += '</div><div id="previewArea" style="margin-top:16px;"></div>';
+    document.getElementById("modalContent").innerHTML = html;
+    document.getElementById("detailModal").classList.add("open");
+    for (var i=0; i<3; i++) {
+        if ([r.net_graph_t1,r.net_graph_t2,r.net_graph_t3][i]) { renderPreview(idx,i); break; }
+    }
+}
+
+function renderPreview(rowIdx, tIdx) {
+    var r = filteredData[rowIdx];
+    var gJson = [r.net_graph_t1, r.net_graph_t2, r.net_graph_t3][tIdx];
+    if (!gJson) { alert("无图数据"); return; }
+
+    // 去除 BOM、首尾空白
+    gJson = gJson.replace(/^\uFEFF/, "").trim();
+
+    // 修复已存入数据库的双重引号格式（CSV解析遗留问题）
+    if (gJson.indexOf('""') !== -1) {
+        gJson = gJson.replace(/""/g, '"');
+        if (gJson.charAt(0) === '"' && gJson.charAt(gJson.length-1) === '"') {
+            gJson = gJson.slice(1, -1);
+        }
+    }
+
+    var g;
+    try {
+        g = JSON.parse(gJson);
+        // 如果解析出来还是字符串，再解析一次
+        if (typeof g === "string") g = JSON.parse(g);
+    } catch(e1) {
+        // 尝试去掉首尾引号后再解析
+        try {
+            var stripped = gJson.replace(/^"|"$/g, "").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+            g = JSON.parse(stripped);
+        } catch(e2) {
+            alert("图数据解析失败: " + e1.message);
+            console.error("raw gJson:", gJson);
+            return;
+        }
+    }
+
+    // 兼容 edges 为对象的旧格式
+    if (!Array.isArray(g.edges)) {
+        g.edges = Object.keys(g.edges || {});
+    }
+    var nodeNs = [];
+    if (r.task_order) r.task_order.split("|").forEach(function(s){ var m=s.match(/N(\d+)/); if(m) nodeNs.push(parseInt(m[1])); });
+    var nodeN = nodeNs[tIdx]||10, REQ_MAP={6:8,8:10,10:12};
+    var DPR=4, IR=26, HEAD_R=8, BODY_W=11, BODY_H=12, CW=650, CH=440, pad=20, footH=36;
+    var oc = document.createElement("canvas");
+    oc.width = (CW+pad*2)*DPR; oc.height = (CH+pad*2+footH)*DPR;
+    var ox = oc.getContext("2d"); ox.scale(DPR,DPR);
+    ox.fillStyle="#fff"; ox.fillRect(0,0,CW+pad*2,CH+pad*2+footH);
+    ox.save(); ox.translate(pad,pad);
+    var nodeMap={};
+    g.nodes.forEach(function(nd){ nodeMap[nd.id]=nd; });
+    ox.strokeStyle="#555"; ox.lineWidth=1.8;
+    g.edges.forEach(function(key){
+        var pts=key.split("-"), a=+pts[0], b=+pts[1], na=nodeMap[a], nb=nodeMap[b];
+        if (!na||!nb) return;
+        ox.beginPath(); ox.moveTo(na.x,na.y); ox.lineTo(nb.x,nb.y); ox.stroke();
+    });
+    g.nodes.forEach(function(nd){
+        var isMe=(nd.id===0);
+        var fill=isMe?"#4a90d9":"#9ab8d8", stroke=isMe?"#2a6aaa":"#6090b0", bg=isMe?"#ddeeff":"#eef3f8";
+        ox.beginPath(); ox.arc(nd.x,nd.y,IR,0,2*Math.PI); ox.fillStyle=bg; ox.fill();
+        ox.strokeStyle=stroke; ox.lineWidth=1.8; ox.stroke();
+        ox.save(); ox.beginPath(); ox.arc(nd.x,nd.y,IR-1,0,2*Math.PI); ox.clip();
+        var hy=nd.y-5, bt=hy+HEAD_R+2;
+        ox.beginPath(); ox.moveTo(nd.x-BODY_W/2+2,bt); ox.lineTo(nd.x+BODY_W/2-2,bt);
+        ox.lineTo(nd.x+BODY_W/2+2,bt+BODY_H+8); ox.lineTo(nd.x-BODY_W/2-2,bt+BODY_H+8);
+        ox.closePath(); ox.fillStyle=fill; ox.fill(); ox.strokeStyle=stroke; ox.lineWidth=1.2; ox.stroke();
+        ox.beginPath(); ox.arc(nd.x,hy,HEAD_R,0,2*Math.PI); ox.fillStyle=fill; ox.fill(); ox.strokeStyle=stroke; ox.stroke();
+        ox.restore();
+        ox.fillStyle="#222"; ox.font="bold 11px 'Microsoft YaHei',Arial"; ox.textAlign="center";
+        ox.fillText(isMe?"我":String(nd.id), nd.x, nd.y+IR+12);
+    });
+    ox.restore();
+    var fy = CH+pad+4;
+    ox.strokeStyle="#ccc"; ox.lineWidth=1; ox.beginPath(); ox.moveTo(pad,fy); ox.lineTo(CW+pad,fy); ox.stroke();
+    var ts = new Date().toLocaleString("zh-CN");
+    ox.fillStyle="#666"; ox.font="13px 'Microsoft YaHei',Arial"; ox.textAlign="left";
+    ox.fillText("T"+(tIdx+1)+" / N"+nodeN+"  |  "+n(r.class_name)+" 学号"+n(r.student_id)+"  |  "+ts, pad, fy+20);
+    ox.textAlign="right";
+    ox.fillText("连线数: "+REQ_MAP[nodeN]+"  节点数: "+nodeN, CW+pad, fy+20);
+
+    var pa = document.getElementById("previewArea"); pa.innerHTML="";
+    var sc = document.createElement("canvas");
+    sc.width=Math.round(oc.width/DPR); sc.height=Math.round(oc.height/DPR);
+    sc.style.cssText="max-width:100%;border:1px solid #eee;border-radius:4px;";
+    sc.getContext("2d").drawImage(oc,0,0,oc.width,oc.height,0,0,sc.width,sc.height);
+    pa.appendChild(sc);
+    var dlBtn = document.createElement("button");
+    dlBtn.textContent="⬇ 下载此图（PNG）";
+    dlBtn.style.cssText="margin-top:12px;display:block;width:100%;padding:10px 0;font-size:14px;font-family:inherit;font-weight:bold;background:#7ecb5a;color:#fff;border:none;border-radius:4px;cursor:pointer;";
+    dlBtn.onclick=function(){
+        oc.toBlob(function(blob){
+            var url=URL.createObjectURL(blob), a=document.createElement("a");
+            a.href=url; a.download=(r.class_name||"")+"_"+n(r.student_id)+"_T"+(tIdx+1)+"_N"+nodeN+".png";
+            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        },"image/png");
+    };
+    pa.appendChild(dlBtn);
+}
+
+function renderED() {
+    function concludedBadge(v) {
+        if (v===1||v==="1") return '<span class="badge badge-green">已确认</span>';
+        if (v===0||v==="0") return '<span class="badge badge-orange">未确定</span>';
+        return '—';
+    }
+    var rows = filteredData.map(function(r, idx) {
+        var rid = r.id || idx;
+        var checked = selectedIds.has(rid) ? "checked" : "";
+        var edOrderStr = r.ed_order || '—';
+        return '<tr>'+
+            '<td class="check-col"><input type="checkbox" class="row-check row-cb" data-id="'+rid+'" '+checked+'></td>'+
+            '<td>'+(idx+1)+'</td>'+
+            '<td>'+n(r.class_name)+'</td>'+
+            '<td>'+n(r.student_id)+'</td>'+
+            '<td style="font-size:11px;color:#888;">'+edOrderStr+'</td>'+
+            '<td style="text-align:center;font-weight:bold;color:#4a90d9;">'+n(r.ed_final_k_n6)+'</td>'+
+            '<td>'+concludedBadge(r.ed_concluded_n6)+'</td>'+
+            '<td style="font-size:11px;color:#888;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+n(r.ed_history_n6)+'">'+n(r.ed_history_n6)+'</td>'+
+            '<td style="text-align:center;font-weight:bold;color:#4a90d9;">'+n(r.ed_final_k_n8)+'</td>'+
+            '<td>'+concludedBadge(r.ed_concluded_n8)+'</td>'+
+            '<td style="font-size:11px;color:#888;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+n(r.ed_history_n8)+'">'+n(r.ed_history_n8)+'</td>'+
+            '<td style="text-align:center;font-weight:bold;color:#4a90d9;">'+n(r.ed_final_k_n10)+'</td>'+
+            '<td>'+concludedBadge(r.ed_concluded_n10)+'</td>'+
+            '<td style="font-size:11px;color:#888;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+n(r.ed_history_n10)+'">'+n(r.ed_history_n10)+'</td>'+
+            '<td><button class="btn btn-small btn-blue" onclick="showDetail('+idx+')">详情</button></td>'+
+            '</tr>';
+    }).join("");
+    document.getElementById("tbodyED").innerHTML = rows;
+    bindCheckboxes();
+}
+document.getElementById("modalCloseBtn").addEventListener("click", function(){
+    document.getElementById("detailModal").classList.remove("open");
+});
+document.getElementById("detailModal").addEventListener("click", function(e){
+    if(e.target===this) this.classList.remove("open");
+});
+
+function showDetail(idx) {
+    var r = filteredData[idx];
+    document.getElementById("modalTitle").textContent = "被试详情 — "+n(r.class_name)+" 学号"+n(r.student_id);
+
+    function row(label, val) {
+        return '<div class="detail-row"><span class="lbl">'+label+'</span><span class="val">'+(val!==null&&val!==undefined&&val!==""?val:"—")+'</span></div>';
+    }
+    function sec(title) { return '<div class="section-title">'+title+'</div>'; }
+    function sep() { return '<hr class="section-sep">'; }
+
+    var html = "";
+    html += sec("📋 基本信息");
+    html += row("提交时间",  r.created_at ? new Date(r.created_at).toLocaleString("zh-CN") : "—");
+    html += row("开始时间",  r.started_at ? new Date(r.started_at).toLocaleString("zh-CN") : n(r.started_at));
+    html += row("练习用时",  r.tutorial_duration);
+    html += row("N6 用时",   r.duration_n6);
+    html += row("N8 用时",   r.duration_n8);
+    html += row("N10 用时",  r.duration_n10);
+    html += row("正式任务总时", r.total_task_duration);
+    html += row("全程总时",  r.duration_total);
+    html += row("班级",      r.class_name);
+    html += row("学号",      r.student_id);
+    html += row("顺序编号",  "顺序"+r.order_num);
+    html += row("呈现顺序",  r.task_order);
+    html += sep();
+
+    html += sec("🕸️ 网络任务指标");
+    [6,8,10].forEach(function(nn){
+        var s = "_n"+nn;
+        html += '<div style="font-size:12px;font-weight:bold;color:#555;margin:8px 0 4px;">N'+nn+' 网络</div>';
+        html += row("自我度数",       r["net_ego_degree"+s]);
+        html += row("标准化中心性",   f2(r["net_ego_normalized"+s]));
+        html += row("相对中心性",     f2(r["net_ego_relative"+s]));
+        html += row("位置分类",       r["net_ego_position"+s]);
+        html += row("网络密度",       f2(r["net_global_density"+s]));
+        html += row("网络中心化",     f2(r["net_global_centralization"+s]));
+    });
+    html += sep();
+
+    html += sec("🎯 逼近法结果（Ego Degree）");
+    html += row("呈现顺序", r.ed_order);
+    [6,8,10].forEach(function(nn){
+        var s = "_n"+nn;
+        html += '<div style="font-size:12px;font-weight:bold;color:#555;margin:8px 0 4px;">N'+nn+'</div>';
+        var kVal = r["ed_final_k"+s];
+        var concluded = (r["ed_concluded"+s]===1||r["ed_concluded"+s]==="1") ? "✓ 已确认" : "× 未确定";
+        html += row("最终 Ego Degree", (kVal!==null&&kVal!==undefined&&kVal!=="") ? kVal : "—");
+        html += row("是否确认", concluded);
+        html += row("选择路径", r["ed_history"+s]);
+    });
+
+    document.getElementById("modalContent").innerHTML = html;
+    document.getElementById("detailModal").classList.add("open");
+}
+
+// ── Download CSV ───────────────────────────────────────
+document.getElementById("dlAllCsvBtn").addEventListener("click", function() {
+    if (!allData.length) { alert("暂无数据。"); return; }
+
+    var cols = ["id","created_at","class_name","student_id","order_num","task_order",
+                "started_at","tutorial_duration","total_task_duration",
+                "duration_n6","duration_n8","duration_n10","duration_total"];
+    [6,8,10].forEach(function(nn){
+        var s="_n"+nn;
+        ["t_order","net_ego_degree","net_ego_normalized","net_ego_relative","net_ego_position",
+         "net_global_density","net_global_centralization",
+         "net_global_core_density","net_global_core_semi_density",
+         "net_global_core_peri_density","net_global_peri_density"].forEach(function(c){ cols.push(c+s); });
+    });
+    cols.push("net_graph_t1","net_graph_t2","net_graph_t3");
+    cols.push("ed_order");
+    [6,8,10].forEach(function(nn){
+        ["ed_final_k","ed_concluded","ed_history"].forEach(function(c){ cols.push(c+"_n"+nn); });
+    });
+
+    var existingKeys = allData.length ? Object.keys(allData[0]) : [];
+    var finalCols = cols.filter(function(k){ return existingKeys.includes(k); });
+
+    var rows = [finalCols.join(",")];
+    allData.forEach(function(r){
+        rows.push(finalCols.map(function(k){
+            var v = r[k];
+            if (v===null||v===undefined) return "";
+            var s = String(v);
+            if (s.includes(",")||s.includes('"')||s.includes("\n")) return '"'+s.replace(/"/g,'""')+'"';
+            return s;
+        }).join(","));
+    });
+
+    var blob = new Blob(["\uFEFF"+rows.join("\r\n")], {type:"text/csv;charset=utf-8"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a"); a.href=url;
+    a.download="实验数据_初中版_"+new Date().toISOString().slice(0,10)+".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+});
+
+// ── Sort headers ──────────────────────────────────────────────────────────────
+document.querySelectorAll("thead th.sortable").forEach(function(th) {
+    th.addEventListener("click", function() {
+        var key = th.dataset.key;
+        if (sortKey === key) { sortDir = -sortDir; }
+        else { sortKey = key; sortDir = 1; }
+        document.querySelectorAll("thead th.sortable").forEach(function(t) {
+            t.classList.remove("sort-asc","sort-desc");
+            var ic = t.querySelector(".sort-icon"); if(ic) ic.textContent="⇅";
+        });
+        th.classList.add(sortDir===1?"sort-asc":"sort-desc");
+        var ic = th.querySelector(".sort-icon");
+        if(ic) ic.textContent = sortDir===1 ? "↑" : "↓";
+        applySortToFiltered(); renderAll();
+    });
+});
+
+// ── Checkbox & bulk bar ───────────────────────────────────────────────────────
+function bindCheckboxes() {
+    document.querySelectorAll(".row-cb").forEach(function(cb) {
+        cb.addEventListener("change", function() {
+            var rid = cb.dataset.id;
+            if(cb.checked) selectedIds.add(rid); else selectedIds.delete(rid);
+            updateBulkBar();
+        });
+    });
+}
+function updateBulkBar() {
+    var bar = document.getElementById("bulkBar");
+    document.getElementById("bulkCount").textContent = selectedIds.size;
+    if(selectedIds.size > 0) bar.classList.add("show"); else bar.classList.remove("show");
+}
+document.getElementById("selectAllED").addEventListener("change", function() {
+    var c=this.checked;
+    filteredData.forEach(function(r,i){ var rid=r.id||i; if(c) selectedIds.add(rid); else selectedIds.delete(rid); });
+    renderAll(); updateBulkBar();
+});
+document.getElementById("selectAllBasic").addEventListener("change", function() {
+    var c=this.checked;
+    filteredData.forEach(function(r,i){ var rid=r.id||i; if(c) selectedIds.add(rid); else selectedIds.delete(rid); });
+    document.getElementById("selectAllNetwork").checked=c;
+    renderAll(); updateBulkBar();
+});
+document.getElementById("selectAllNetwork").addEventListener("change", function() {
+    var c=this.checked;
+    filteredData.forEach(function(r,i){ var rid=r.id||i; if(c) selectedIds.add(rid); else selectedIds.delete(rid); });
+    document.getElementById("selectAllBasic").checked=c;
+    renderAll(); updateBulkBar();
+});
+document.getElementById("bulkCancelBtn").addEventListener("click", function() {
+    selectedIds.clear();
+    document.getElementById("selectAllBasic").checked=false;
+    document.getElementById("selectAllNetwork").checked=false;
+    renderAll(); updateBulkBar();
+});
+document.getElementById("filterPngN").addEventListener("change", function() {
+    var nf=this.value; if(!nf) return;
+    filteredData.forEach(function(r,i){
+        var rid=r.id||i;
+        var tIdx=getTaskIndexForN(r,parseInt(nf));
+        if(tIdx>=0 && [r.net_graph_t1,r.net_graph_t2,r.net_graph_t3][tIdx]) selectedIds.add(rid);
+    });
+    renderAll(); updateBulkBar();
+});
+function getTaskIndexForN(r, nodeN) {
+    if(!r.task_order) return -1;
+    var parts=r.task_order.split("|");
+    for(var i=0;i<parts.length;i++) if(parts[i].indexOf("N"+nodeN)>=0) return i;
+    return -1;
+}
+
+// ── Bulk download PNGs ────────────────────────────────────────────────────────
+document.getElementById("bulkDlBtn").addEventListener("click", async function() {
+    var nSel=document.getElementById("bulkNSelect").value;
+    var btn=this; btn.disabled=true; btn.textContent="生成中…";
+    var DPR=4,IR=26,HR=8,BW=11,BH=12,CW=650,CH=440,pad=20,footH=36;
+    var REQ_MAP={6:8,8:10,10:12};
+    var toDownload=filteredData.filter(function(r,i){ return selectedIds.has(r.id||i); });
+    if(!toDownload.length){ alert("请先勾选被试"); btn.disabled=false; btn.textContent="⬇ 批量下载PNG"; return; }
+    var zipObj=new MiniZip(), added=0;
+    for(var ri=0;ri<toDownload.length;ri++){
+        var r=toDownload[ri];
+        var graphs=[r.net_graph_t1,r.net_graph_t2,r.net_graph_t3];
+        var nodeNs=[];
+        if(r.task_order) r.task_order.split("|").forEach(function(s){var m=s.match(/N(\d+)/);if(m)nodeNs.push(parseInt(m[1]));});
+        for(var ti=0;ti<3;ti++){
+            var nodeN=nodeNs[ti];
+            if(nSel!=="all" && String(nodeN)!==nSel) continue;
+            var gJson=graphs[ti]; if(!gJson) continue;
+            gJson=gJson.replace(/^\uFEFF/,"").trim();
+            if(gJson.indexOf('""')!==-1){ gJson=gJson.replace(/""/g,'"'); if(gJson[0]==='"'&&gJson[gJson.length-1]==='"') gJson=gJson.slice(1,-1); }
+            var g; try{g=JSON.parse(gJson);if(typeof g==="string")g=JSON.parse(g);}catch(e){continue;}
+            if(!Array.isArray(g.edges)) g.edges=Object.keys(g.edges||{});
+            var nodeMap={}; g.nodes.forEach(function(nd){nodeMap[nd.id]=nd;});
+            var oc=document.createElement("canvas");
+            oc.width=(CW+pad*2)*DPR; oc.height=(CH+pad*2+footH)*DPR;
+            var ox=oc.getContext("2d"); ox.scale(DPR,DPR);
+            ox.fillStyle="#fff"; ox.fillRect(0,0,CW+pad*2,CH+pad*2+footH);
+            ox.save(); ox.translate(pad,pad);
+            ox.strokeStyle="#555"; ox.lineWidth=1.8;
+            g.edges.forEach(function(key){ var pts=key.split("-"),a=+pts[0],b=+pts[1],na=nodeMap[a],nb=nodeMap[b]; if(!na||!nb)return; ox.beginPath();ox.moveTo(na.x,na.y);ox.lineTo(nb.x,nb.y);ox.stroke(); });
+            g.nodes.forEach(function(nd){
+                var isMe=(nd.id===0),fill=isMe?"#4a90d9":"#9ab8d8",stroke=isMe?"#2a6aaa":"#6090b0",bg=isMe?"#ddeeff":"#eef3f8";
+                ox.beginPath();ox.arc(nd.x,nd.y,IR,0,2*Math.PI);ox.fillStyle=bg;ox.fill();ox.strokeStyle=stroke;ox.lineWidth=1.8;ox.stroke();
+                ox.save();ox.beginPath();ox.arc(nd.x,nd.y,IR-1,0,2*Math.PI);ox.clip();
+                var hy=nd.y-5,bt=hy+HR+2;
+                ox.beginPath();ox.moveTo(nd.x-BW/2+2,bt);ox.lineTo(nd.x+BW/2-2,bt);ox.lineTo(nd.x+BW/2+2,bt+BH+8);ox.lineTo(nd.x-BW/2-2,bt+BH+8);ox.closePath();ox.fillStyle=fill;ox.fill();ox.strokeStyle=stroke;ox.lineWidth=1.2;ox.stroke();
+                ox.beginPath();ox.arc(nd.x,hy,HR,0,2*Math.PI);ox.fillStyle=fill;ox.fill();ox.strokeStyle=stroke;ox.stroke();
+                ox.restore();
+                ox.fillStyle="#222";ox.font="bold 11px 'Microsoft YaHei',Arial";ox.textAlign="center";
+                ox.fillText(isMe?"我":String(nd.id),nd.x,nd.y+IR+12);
+            });
+            ox.restore();
+            var fy=CH+pad+4;
+            ox.strokeStyle="#ccc";ox.lineWidth=1;ox.beginPath();ox.moveTo(pad,fy);ox.lineTo(CW+pad,fy);ox.stroke();
+            ox.fillStyle="#666";ox.font="13px 'Microsoft YaHei',Arial";ox.textAlign="left";
+            ox.fillText("T"+(ti+1)+" / N"+nodeN+"  |  "+n(r.class_name)+" 学号"+n(r.student_id),pad,fy+20);
+            ox.textAlign="right"; ox.fillText("连线数: "+REQ_MAP[nodeN]+"  节点数: "+nodeN,CW+pad,fy+20);
+            var bytes=await new Promise(function(resolve){
+                oc.toBlob(function(blob){ var fr=new FileReader();fr.onload=function(){resolve(new Uint8Array(fr.result));};fr.readAsArrayBuffer(blob); },"image/png");
+            });
+            zipObj.addFile((r.class_name||"")+"_"+(r.student_id||"")+"_T"+(ti+1)+"_N"+nodeN+".png", bytes);
+            added++;
+        }
+    }
+    if(!added){ alert("没有找到对应的图片数据"); btn.disabled=false; btn.textContent="⬇ 批量下载PNG"; return; }
+    var blob=new Blob([zipObj.generate()],{type:"application/zip"});
+    var url=URL.createObjectURL(blob),a=document.createElement("a");
+    a.href=url; a.download="批量PNG_"+new Date().toISOString().slice(0,10)+(nSel!=="all"?"_N"+nSel:"")+"_"+added+"张.zip";
+    document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+    btn.disabled=false; btn.textContent="⬇ 批量下载PNG";
+});
+
+// ══════════════════════════════════════════════════
+// DEGREE GALLERY
+// ══════════════════════════════════════════════════
+var currentGalleryN = 6;
+var galleryCanvasCache = {}; // key: "id_tIdx" → offscreen canvas
+
+// N sub-tab switching
+document.querySelectorAll(".deg-n-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+        document.querySelectorAll(".deg-n-btn").forEach(function(b){ b.classList.remove("active"); });
+        btn.classList.add("active");
+        currentGalleryN = parseInt(btn.dataset.n);
+        renderGallery(currentGalleryN);
+    });
+});
+
+function getTaskIdxForN(r, nodeN) {
+    if (!r.task_order) return -1;
+    var parts = r.task_order.split("|");
+    for (var i=0; i<parts.length; i++) if (parts[i].indexOf("N"+nodeN)>=0) return i;
+    return -1;
+}
+
+function parseGraphJson(gJson) {
+    if (!gJson) return null;
+    gJson = gJson.replace(/^\uFEFF/,"").trim();
+    if (gJson.indexOf('""') !== -1) {
+        gJson = gJson.replace(/""/g,'"');
+        if (gJson[0]==='"' && gJson[gJson.length-1]==='"') gJson=gJson.slice(1,-1);
+    }
+    try {
+        var g = JSON.parse(gJson);
+        if (typeof g==="string") g=JSON.parse(g);
+        if (!Array.isArray(g.edges)) g.edges=Object.keys(g.edges||{});
+        return g;
+    } catch(e) { return null; }
+}
+
+function drawNetworkToCanvas(g, nodeN, label, width, height) {
+    var DPR=2, IR=22, HR=7, BW=10, BH=11, CW=width, CH=height;
+    var oc=document.createElement("canvas");
+    oc.width=CW*DPR; oc.height=CH*DPR;
+    var ox=oc.getContext("2d"); ox.scale(DPR,DPR);
+    ox.fillStyle="#fff"; ox.fillRect(0,0,CW,CH);
+    var nodeMap={}; g.nodes.forEach(function(nd){nodeMap[nd.id]=nd;});
+    // scale coords from original 650x440 to thumbnail size
+    var scaleX=CW/650, scaleY=CH/440;
+    ox.strokeStyle="#777"; ox.lineWidth=1.2;
+    g.edges.forEach(function(key){
+        var pts=key.split("-"),a=+pts[0],b=+pts[1],na=nodeMap[a],nb=nodeMap[b];
+        if(!na||!nb) return;
+        ox.beginPath(); ox.moveTo(na.x*scaleX,na.y*scaleY); ox.lineTo(nb.x*scaleX,nb.y*scaleY); ox.stroke();
+    });
+    g.nodes.forEach(function(nd){
+        var x=nd.x*scaleX, y=nd.y*scaleY;
+        var isMe=(nd.id===0),fill=isMe?"#4a90d9":"#9ab8d8",stroke=isMe?"#2a6aaa":"#6090b0",bg=isMe?"#ddeeff":"#eef3f8";
+        ox.beginPath(); ox.arc(x,y,IR,0,2*Math.PI); ox.fillStyle=bg; ox.fill();
+        ox.strokeStyle=stroke; ox.lineWidth=1.4; ox.stroke();
+        ox.save(); ox.beginPath(); ox.arc(x,y,IR-1,0,2*Math.PI); ox.clip();
+        var hy=y-4, bt=hy+HR+1;
+        ox.beginPath(); ox.moveTo(x-BW/2+1,bt); ox.lineTo(x+BW/2-1,bt);
+        ox.lineTo(x+BW/2+2,bt+BH+5); ox.lineTo(x-BW/2-2,bt+BH+5);
+        ox.closePath(); ox.fillStyle=fill; ox.fill();
+        ox.beginPath(); ox.arc(x,hy,HR,0,2*Math.PI); ox.fillStyle=fill; ox.fill();
+        ox.restore();
+        ox.fillStyle="#222"; ox.font="bold 8px Arial"; ox.textAlign="center";
+        ox.fillText(isMe?"我":String(nd.id),x,y+IR+9);
+    });
+    return oc;
+}
+
+function drawNetworkFull(g, nodeN, r, tIdx) {
+    var DPR=4, IR=26, HR=8, BW=11, BH=12, CW=650, CH=440, pad=20, footH=36;
+    var REQ_MAP={6:8,8:10,10:12};
+    var oc=document.createElement("canvas");
+    oc.width=(CW+pad*2)*DPR; oc.height=(CH+pad*2+footH)*DPR;
+    var ox=oc.getContext("2d"); ox.scale(DPR,DPR);
+    ox.fillStyle="#fff"; ox.fillRect(0,0,CW+pad*2,CH+pad*2+footH);
+    ox.save(); ox.translate(pad,pad);
+    var nodeMap={}; g.nodes.forEach(function(nd){nodeMap[nd.id]=nd;});
+    ox.strokeStyle="#555"; ox.lineWidth=1.8;
+    g.edges.forEach(function(key){
+        var pts=key.split("-"),a=+pts[0],b=+pts[1],na=nodeMap[a],nb=nodeMap[b];
+        if(!na||!nb) return;
+        ox.beginPath(); ox.moveTo(na.x,na.y); ox.lineTo(nb.x,nb.y); ox.stroke();
+    });
+    g.nodes.forEach(function(nd){
+        var isMe=(nd.id===0),fill=isMe?"#4a90d9":"#9ab8d8",stroke=isMe?"#2a6aaa":"#6090b0",bg=isMe?"#ddeeff":"#eef3f8";
+        ox.beginPath(); ox.arc(nd.x,nd.y,IR,0,2*Math.PI); ox.fillStyle=bg; ox.fill();
+        ox.strokeStyle=stroke; ox.lineWidth=1.8; ox.stroke();
+        ox.save(); ox.beginPath(); ox.arc(nd.x,nd.y,IR-1,0,2*Math.PI); ox.clip();
+        var hy=nd.y-5, bt=hy+HR+2;
+        ox.beginPath(); ox.moveTo(nd.x-BW/2+2,bt); ox.lineTo(nd.x+BW/2-2,bt);
+        ox.lineTo(nd.x+BW/2+2,bt+BH+8); ox.lineTo(nd.x-BW/2-2,bt+BH+8);
+        ox.closePath(); ox.fillStyle=fill; ox.fill(); ox.strokeStyle=stroke; ox.lineWidth=1.2; ox.stroke();
+        ox.beginPath(); ox.arc(nd.x,hy,HR,0,2*Math.PI); ox.fillStyle=fill; ox.fill(); ox.strokeStyle=stroke; ox.stroke();
+        ox.restore();
+        ox.fillStyle="#222"; ox.font="bold 11px 'Microsoft YaHei',Arial"; ox.textAlign="center";
+        ox.fillText(isMe?"我":String(nd.id),nd.x,nd.y+IR+12);
+    });
+    ox.restore();
+    var fy=CH+pad+4;
+    ox.strokeStyle="#ccc"; ox.lineWidth=1; ox.beginPath(); ox.moveTo(pad,fy); ox.lineTo(CW+pad,fy); ox.stroke();
+    ox.fillStyle="#666"; ox.font="13px 'Microsoft YaHei',Arial"; ox.textAlign="left";
+    ox.fillText("T"+(tIdx+1)+" / N"+nodeN+"  |  "+n(r.class_name)+" 学号"+n(r.student_id), pad, fy+20);
+    ox.textAlign="right";
+    ox.fillText("连线数: "+(REQ_MAP[nodeN]||"?")+"  节点数: "+nodeN, CW+pad, fy+20);
+    return oc;
+}
+
+function renderGallery(nodeN) {
+    var content = document.getElementById("galleryContent");
+    content.innerHTML = "<div style='color:#aaa;padding:40px;text-align:center;'>渲染中…</div>";
+    // gather data
+    var maxDeg = nodeN - 1;
+    var groups = {}; // deg → [{r, tIdx, g}]
+    for (var d=1; d<=maxDeg; d++) groups[d] = [];
+
+    allData.forEach(function(r) {
+        var tIdx = getTaskIdxForN(r, nodeN);
+        if (tIdx < 0) return;
+        var gJson = [r.net_graph_t1, r.net_graph_t2, r.net_graph_t3][tIdx];
+        var g = parseGraphJson(gJson); if (!g) return;
+        var degKey = "net_ego_degree_n"+nodeN;
+        var deg = r[degKey];
+        if (deg === null || deg === undefined) {
+            // compute from graph
+            var cnt=0; g.edges.forEach(function(key){ var pts=key.split("-"); if(+pts[0]===0||+pts[1]===0) cnt++; });
+            deg = cnt;
+        }
+        deg = parseInt(deg);
+        if (deg>=1 && deg<=maxDeg) groups[deg].push({r:r, tIdx:tIdx, g:g});
+    });
+
+    // render
+    setTimeout(function() {
+        var html = "";
+        var hasAny = false;
+        for (var d=1; d<=maxDeg; d++) {
+            var items = groups[d];
+            if (!items.length) continue;
+            hasAny = true;
+            html += '<div class="deg-group" id="degGroup_'+nodeN+'_'+d+'">';
+            html += '<div class="deg-group-header">';
+            html += '<h3>Ego Degree = '+d+'</h3>';
+            html += '<div style="display:flex;align-items:center;gap:10px;">';
+            html += '<span>'+items.length+' 人</span>';
+            html += '<button class="btn btn-small btn-blue" onclick="downloadDegGroup('+nodeN+','+d+')">⬇ 下载本组</button>';
+            html += '</div></div>';
+            html += '<div class="deg-thumbs" id="degThumbs_'+nodeN+'_'+d+'">';
+            items.forEach(function(item, i) {
+                html += '<div class="deg-thumb" onclick="openLightbox('+nodeN+','+d+','+i+')">';
+                html += '<canvas id="thumb_'+nodeN+'_'+d+'_'+i+'" width="280" height="190"></canvas>';
+                html += '<div class="deg-thumb-label">'+n(item.r.class_name)+' 学号'+n(item.r.student_id)+'</div>';
+                html += '</div>';
+            });
+            html += '</div></div>';
+        }
+        if (!hasAny) html = '<div class="deg-empty">暂无 N='+nodeN+' 的数据</div>';
+        content.innerHTML = html;
+
+        // draw thumbnails
+        for (var d=1; d<=maxDeg; d++) {
+            groups[d].forEach(function(item, i) {
+                var canvas = document.getElementById("thumb_"+nodeN+"_"+d+"_"+i);
+                if (!canvas) return;
+                var oc = drawNetworkToCanvas(item.g, nodeN, "", 280, 190);
+                canvas.getContext("2d").drawImage(oc,0,0,oc.width,oc.height,0,0,280,190);
+            });
+        }
+
+        // store groups for lightbox/download access
+        window._galleryGroups = window._galleryGroups || {};
+        window._galleryGroups[nodeN] = groups;
+    }, 30);
+}
+
+// ── Lightbox ──────────────────────────────────────────────────────────────────
+var _lightboxItem = null;
+function openLightbox(nodeN, deg, itemIdx) {
+    var groups = (window._galleryGroups||{})[nodeN];
+    if (!groups || !groups[deg]) return;
+    var item = groups[deg][itemIdx];
+    _lightboxItem = {item:item, nodeN:nodeN, deg:deg, idx:itemIdx};
+    var oc = drawNetworkFull(item.g, nodeN, item.r, item.tIdx);
+    var lb = document.getElementById("lightboxCanvas");
+    lb.width  = Math.round(oc.width/4);
+    lb.height = Math.round(oc.height/4);
+    lb.getContext("2d").drawImage(oc,0,0,oc.width,oc.height,0,0,lb.width,lb.height);
+    lb._fullCanvas = oc;
+    document.getElementById("lightboxLabel").textContent =
+        n(item.r.class_name)+" 学号"+n(item.r.student_id)+" / N="+nodeN+" / Ego Degree="+deg;
+    document.getElementById("lightbox").classList.add("open");
+}
+document.getElementById("lightboxClose").addEventListener("click", function() {
+    document.getElementById("lightbox").classList.remove("open");
+});
+document.getElementById("lightbox").addEventListener("click", function(e) {
+    if (e.target===this) this.classList.remove("open");
+});
+document.getElementById("lightboxDl").addEventListener("click", function() {
+    if (!_lightboxItem) return;
+    var oc = document.getElementById("lightboxCanvas")._fullCanvas;
+    if (!oc) return;
+    oc.toBlob(function(blob){
+        var url=URL.createObjectURL(blob), a=document.createElement("a");
+        a.href=url;
+        a.download=n(_lightboxItem.item.r.class_name)+"_"+n(_lightboxItem.item.r.student_id)+"_N"+_lightboxItem.nodeN+"_deg"+_lightboxItem.deg+".png";
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    },"image/png");
+});
+
+// ── Download one degree group ─────────────────────────────────────────────────
+async function downloadDegGroup(nodeN, deg) {
+    var groups = (window._galleryGroups||{})[nodeN];
+    if (!groups || !groups[deg] || !groups[deg].length) return;
+    var zipObj = new MiniZip();
+    for (var i=0; i<groups[deg].length; i++) {
+        var item = groups[deg][i];
+        var oc = drawNetworkFull(item.g, nodeN, item.r, item.tIdx);
+        var bytes = await new Promise(function(resolve){
+            oc.toBlob(function(blob){ var fr=new FileReader(); fr.onload=function(){resolve(new Uint8Array(fr.result));}; fr.readAsArrayBuffer(blob); },"image/png");
+        });
+        zipObj.addFile(n(item.r.class_name)+"_"+n(item.r.student_id)+"_N"+nodeN+"_deg"+deg+"_"+i+".png", bytes);
+    }
+    var blob=new Blob([zipObj.generate()],{type:"application/zip"});
+    var url=URL.createObjectURL(blob), a=document.createElement("a");
+    a.href=url; a.download="N"+nodeN+"_degree"+deg+"_"+groups[deg].length+"人.zip";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// ── Download all groups for current N ────────────────────────────────────────
+document.getElementById("galleryDlAllBtn").addEventListener("click", async function() {
+    var btn=this; btn.disabled=true; btn.textContent="生成中…";
+    var groups=(window._galleryGroups||{})[currentGalleryN];
+    if(!groups){ btn.disabled=false; btn.textContent="⬇ 打包下载当前全部图"; return; }
+    var zipObj=new MiniZip(), added=0;
+    for(var d=1; d<currentGalleryN; d++){
+        if(!groups[d]||!groups[d].length) continue;
+        for(var i=0;i<groups[d].length;i++){
+            var item=groups[d][i];
+            var oc=drawNetworkFull(item.g,currentGalleryN,item.r,item.tIdx);
+            var bytes=await new Promise(function(resolve){
+                oc.toBlob(function(blob){var fr=new FileReader();fr.onload=function(){resolve(new Uint8Array(fr.result));};fr.readAsArrayBuffer(blob);},"image/png");
+            });
+            zipObj.addFile("deg"+d+"/"+n(item.r.class_name)+"_"+n(item.r.student_id)+"_N"+currentGalleryN+"_deg"+d+"_"+i+".png", bytes);
+            added++;
+        }
+    }
+    if(!added){ alert("暂无数据"); btn.disabled=false; btn.textContent="⬇ 打包下载当前全部图"; return; }
+    var blob=new Blob([zipObj.generate()],{type:"application/zip"});
+    var url=URL.createObjectURL(blob),a=document.createElement("a");
+    a.href=url; a.download="度数图册_N"+currentGalleryN+"_"+added+"张.zip";
+    document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+    btn.disabled=false; btn.textContent="⬇ 打包下载当前全部图";
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PAGE: 整洁网络图 (Force-directed reorganization)
+// ══════════════════════════════════════════════════════════════════════════════
+
+var orgInitialized = false;
+function initOrgPage() {
+    if (orgInitialized) return;
+    orgInitialized = true;
+    // populate class filter
+    var clsSel = document.getElementById("orgClass");
+    var classes = {};
+    allData.forEach(function(r){ if(r.class_name) classes[r.class_name]=true; });
+    Object.keys(classes).sort().forEach(function(c){
+        var o=document.createElement("option"); o.value=c; o.textContent=c; clsSel.appendChild(o);
+    });
+    // populate degree filter based on selected N
+    updateOrgDegFilter();
+    document.getElementById("orgN").addEventListener("change", updateOrgDegFilter);
+}
+
+function updateOrgDegFilter() {
+    var nn = parseInt(document.getElementById("orgN").value);
+    var sel = document.getElementById("orgDeg");
+    sel.innerHTML = '<option value="">全部</option>';
+    for (var d=1; d<nn; d++) {
+        var o=document.createElement("option"); o.value=d; o.textContent="Degree = "+d; sel.appendChild(o);
+    }
+}
+
+document.getElementById("orgRenderBtn").addEventListener("click", function() {
+    var nn  = parseInt(document.getElementById("orgN").value);
+    var deg = document.getElementById("orgDeg").value;
+    var cls = document.getElementById("orgClass").value;
+    var grid = document.getElementById("orgGrid");
+    grid.innerHTML = "<div style='color:#aaa;padding:40px;'>渲染中…</div>";
+
+    // filter records
+    var items = [];
+    allData.forEach(function(r) {
+        if (cls && r.class_name !== cls) return;
+        var tIdx = getTaskIdxForN(r, nn); if (tIdx<0) return;
+        var gJson = [r.net_graph_t1,r.net_graph_t2,r.net_graph_t3][tIdx];
+        var g = parseGraphJson(gJson); if(!g) return;
+        var degVal = parseInt(r["net_ego_degree_n"+nn]);
+        if (deg && degVal !== parseInt(deg)) return;
+        items.push({r:r, g:g, tIdx:tIdx, nn:nn, deg:degVal});
+    });
+
+    // sort by degree desc
+    items.sort(function(a,b){ return b.deg - a.deg; });
+    document.getElementById("orgCount").textContent = "共 "+items.length+" 人";
+
+    setTimeout(function() {
+        var html = "";
+        items.forEach(function(item, i) {
+            html += '<div class="org-card" id="orgCard_'+i+'">';
+            html += '<div class="org-card-header">';
+            html += '<span>'+n(item.r.class_name)+' 学号'+n(item.r.student_id)+'</span>';
+            html += '<span class="deg-badge">Degree '+item.deg+'</span>';
+            html += '</div>';
+            html += '<div class="org-canvas-row">';
+            html += '<div class="org-canvas-wrap"><canvas id="orgOrig_'+i+'" width="140" height="110"></canvas><div class="org-canvas-label">原始</div></div>';
+            html += '<div class="org-canvas-wrap"><canvas id="orgForce_'+i+'" width="140" height="110"></canvas><div class="org-canvas-label">整洁化</div></div>';
+            html += '</div>';
+            html += '</div>';
+        });
+        if (!items.length) html = "<div style='color:#bbb;padding:40px;'>无匹配数据</div>";
+        grid.innerHTML = html;
+
+        // draw each card
+        items.forEach(function(item, i) {
+            drawOrgOrig(item.g, item.nn, item.deg, document.getElementById("orgOrig_"+i), 140, 110);
+            drawOrgForce(item.g, item.nn, item.deg, document.getElementById("orgForce_"+i), 140, 110);
+        });
+
+        // store for download
+        window._orgItems = items;
+    }, 30);
+});
+
+// Draw original graph scaled to thumb
+function drawOrgOrig(g, nn, deg, canvas, W, H) {
+    if (!canvas) return;
+    var ctx = canvas.getContext("2d");
+    ctx.fillStyle="#fff"; ctx.fillRect(0,0,W,H);
+    var nodeMap={}; g.nodes.forEach(function(nd){nodeMap[nd.id]=nd;});
+    var sx=W/650, sy=H/440;
+    ctx.strokeStyle="#999"; ctx.lineWidth=1;
+    g.edges.forEach(function(key){ var p=key.split("-"),a=+p[0],b=+p[1],na=nodeMap[a],nb=nodeMap[b]; if(!na||!nb)return; ctx.beginPath();ctx.moveTo(na.x*sx,na.y*sy);ctx.lineTo(nb.x*sx,nb.y*sy);ctx.stroke(); });
+    g.nodes.forEach(function(nd){
+        var x=nd.x*sx,y=nd.y*sy,r=nd.id===0?10:7;
+        ctx.beginPath(); ctx.arc(x,y,r,0,2*Math.PI);
+        ctx.fillStyle=nd.id===0?"#4a90d9":"#9ab8d8"; ctx.fill();
+        ctx.strokeStyle=nd.id===0?"#2a6aaa":"#6090b0"; ctx.lineWidth=1; ctx.stroke();
+        ctx.fillStyle="#222"; ctx.font="bold 7px Arial"; ctx.textAlign="center";
+        ctx.fillText(nd.id===0?"我":String(nd.id),x,y+r+7);
+    });
+}
+
+// Force-directed layout: ego center, others by degree
+function forceLayout(g, W, H, iterations) {
+    var N = g.nodes.length;
+    var adj = {};
+    g.nodes.forEach(function(nd){ adj[nd.id]=[]; });
+    g.edges.forEach(function(key){ var p=key.split("-"),a=+p[0],b=+p[1]; adj[a].push(b); adj[b].push(a); });
+
+    // compute degree
+    var deg = {};
+    g.nodes.forEach(function(nd){ deg[nd.id]=adj[nd.id].length; });
+
+    // initialize positions: ego at center, others in ring by degree (higher degree closer)
+    var maxDeg = Math.max.apply(null, g.nodes.map(function(nd){return deg[nd.id];}));
+    var pos = {};
+    var cx=W/2, cy=H/2, margin=40;
+    g.nodes.forEach(function(nd) {
+        if (nd.id===0) { pos[nd.id]={x:cx,y:cy}; return; }
+        var angle = (nd.id / (N-1)) * 2 * Math.PI;
+        // radius: inversely proportional to degree (higher deg → closer to center)
+        var ratio = maxDeg>0 ? 1-(deg[nd.id]/maxDeg)*0.5 : 0.7;
+        var r = margin + ratio*(Math.min(W,H)/2 - margin);
+        pos[nd.id] = { x: cx + r*Math.cos(angle), y: cy + r*Math.sin(angle) };
+    });
+
+    // run force iterations
+    var K = Math.sqrt(W*H/N);
+    for (var iter=0; iter<(iterations||80); iter++) {
+        var disp = {};
+        g.nodes.forEach(function(nd){ disp[nd.id]={x:0,y:0}; });
+
+        // repulsion
+        g.nodes.forEach(function(u) {
+            g.nodes.forEach(function(v) {
+                if (u.id===v.id) return;
+                var dx=pos[u.id].x-pos[v.id].x, dy=pos[u.id].y-pos[v.id].y;
+                var dist=Math.sqrt(dx*dx+dy*dy)||0.01;
+                var rep=K*K/dist;
+                disp[u.id].x+=dx/dist*rep; disp[u.id].y+=dy/dist*rep;
+            });
+        });
+
+        // attraction along edges
+        g.edges.forEach(function(key) {
+            var p=key.split("-"),a=+p[0],b=+p[1];
+            var dx=pos[a].x-pos[b].x, dy=pos[a].y-pos[b].y;
+            var dist=Math.sqrt(dx*dx+dy*dy)||0.01;
+            var att=dist*dist/K;
+            disp[a].x-=dx/dist*att; disp[a].y-=dy/dist*att;
+            disp[b].x+=dx/dist*att; disp[b].y+=dy/dist*att;
+        });
+
+        // gravity toward center (stronger for non-ego)
+        g.nodes.forEach(function(nd) {
+            if (nd.id===0) return; // ego stays fixed at center
+            var grav = 0.08 * (1-(deg[nd.id]/(maxDeg||1))*0.5);
+            disp[nd.id].x += (cx-pos[nd.id].x)*grav;
+            disp[nd.id].y += (cy-pos[nd.id].y)*grav;
+        });
+
+        // temperature cooling
+        var temp = Math.max(2, W/5 * (1 - iter/(iterations||80)));
+        g.nodes.forEach(function(nd) {
+            if (nd.id===0) return; // keep ego fixed
+            var dx=disp[nd.id].x, dy=disp[nd.id].y;
+            var dist=Math.sqrt(dx*dx+dy*dy)||0.01;
+            var step=Math.min(dist,temp);
+            pos[nd.id].x=Math.max(30,Math.min(W-30, pos[nd.id].x+dx/dist*step));
+            pos[nd.id].y=Math.max(30,Math.min(H-30, pos[nd.id].y+dy/dist*step));
+        });
+    }
+    return pos;
+}
+
+function drawOrgForce(g, nn, deg, canvas, W, H) {
+    if (!canvas) return;
+    var nodeIds = g.nodes.map(function(nd){return nd.id;});
+    drawNetwork(nodeIds, g.edges, W, H, canvas, 0, false);
+}
+
+// Download all organized graphs
+document.getElementById("orgDlAllBtn").addEventListener("click", async function() {
+    var items = window._orgItems;
+    if (!items || !items.length) { alert("请先点击「生成」"); return; }
+    var btn=this; btn.disabled=true; btn.textContent="生成中…";
+    var zipObj=new MiniZip(), DPR=3, W=800, H=640;
+    for (var i=0; i<items.length; i++) {
+        var item=items[i];
+        // original
+        var ocO=document.createElement("canvas"); ocO.width=W*DPR; ocO.height=H*DPR;
+        var ctxO=ocO.getContext("2d"); ctxO.scale(DPR,DPR);
+        drawOrgOrig(item.g, item.nn, item.deg, ocO, W, H);
+        // force
+        var ocF=document.createElement("canvas"); ocF.width=W*DPR; ocF.height=H*DPR;
+        var ctxF=ocF.getContext("2d"); ctxF.scale(DPR,DPR);
+        drawOrgForce(item.g, item.nn, item.deg, ocF, W, H);
+        // stitch side by side
+        var oc=document.createElement("canvas"); oc.width=W*2*DPR; oc.height=H*DPR;
+        var ctx=oc.getContext("2d");
+        ctx.fillStyle="#fff"; ctx.fillRect(0,0,oc.width,oc.height);
+        ctx.drawImage(ocO,0,0); ctx.drawImage(ocF,W*DPR,0);
+        // label
+        ctx.fillStyle="#555"; ctx.font="bold "+(14*DPR)+"px 'Microsoft YaHei',Arial";
+        ctx.textAlign="center";
+        ctx.fillText("原始", W/2*DPR, (H-8)*DPR);
+        ctx.fillText("整洁化 (deg="+item.deg+")", (W+W/2)*DPR, (H-8)*DPR);
+        var bytes=await new Promise(function(resolve){
+            oc.toBlob(function(blob){var fr=new FileReader();fr.onload=function(){resolve(new Uint8Array(fr.result));};fr.readAsArrayBuffer(blob);},"image/png");
+        });
+        zipObj.addFile(n(item.r.class_name)+"_"+n(item.r.student_id)+"_N"+item.nn+"_deg"+item.deg+"_整洁化.png", bytes);
+    }
+    var blob=new Blob([zipObj.generate()],{type:"application/zip"});
+    var url=URL.createObjectURL(blob),a=document.createElement("a");
+    a.href=url; a.download="整洁网络图_N"+document.getElementById("orgN").value+"_"+items.length+"人.zip";
+    document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+    btn.disabled=false; btn.textContent="⬇ 下载全部整洁图";
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PAGE: 代表性图 (Representative / Median Graph)
+// ══════════════════════════════════════════════════════════════════════════════
+
+var currentRepN = 6;
+document.querySelectorAll(".rep-n-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+        document.querySelectorAll(".rep-n-btn").forEach(function(b){b.classList.remove("active");});
+        btn.classList.add("active");
+        currentRepN = parseInt(btn.dataset.n);
+        renderRepPage(currentRepN);
+    });
+});
+
+function initRepPage() {
+    renderRepPage(currentRepN);
+}
+
+// ── Degree sequence representative finding ───────────────────────────────────
+
+// Compute degree sequence of a graph (sorted, all nodes including ego)
+function degreeSequence(g) {
+    var adj = {};
+    g.nodes.forEach(function(nd){ adj[nd.id]=0; });
+    g.edges.forEach(function(key){
+        var p=key.split("-"),a=+p[0],b=+p[1];
+        if(adj[a]!==undefined) adj[a]++;
+        if(adj[b]!==undefined) adj[b]++;
+    });
+    // return sorted degree sequence of ALL nodes (including ego)
+    return Object.keys(adj)
+        .map(function(k){return adj[k];})
+        .sort(function(a,b){return a-b;});
+}
+
+// Mean degree sequence across all items in a group
+function meanDegreeSequence(items) {
+    if(!items.length) return [];
+    var len = items[0].degSeq.length;
+    var result = [];
+    for(var i=0;i<len;i++){
+        var sum=0, cnt=0;
+        items.forEach(function(item){
+            if(i<item.degSeq.length){ sum+=item.degSeq[i]; cnt++; }
+        });
+        result.push(cnt?sum/cnt:0);
+    }
+    return result;
+}
+
+// Euclidean distance between two sequences
+function seqDist(a, b) {
+    var d=0;
+    for(var i=0;i<Math.min(a.length,b.length);i++) d+=Math.pow(a[i]-b[i],2);
+    return Math.sqrt(d);
+}
+
+// Draw a graph from normalized coords (0-1) onto a canvas
+// ── Force-directed layout for any edge set ───────────────────────────────────
+// nodes: array of {id}, edges: array of "a-b" strings
+// Returns {id: {x,y}} map with positions in [0,W] x [0,H]
+function forceLayoutFromEdges(nodeIds, edges, W, H, egoId) {
+    var N = nodeIds.length;
+    if (N === 0) return {};
+    var pad = Math.min(W, H) * 0.13;
+    var CW = W - pad*2, CH = H - pad*2;
+    var cx = pad+CW/2, cy = pad+CH/2;
+
+    // Build adjacency and degree
+    var adj = {}, deg = {};
+    nodeIds.forEach(function(id){ adj[id]=[]; deg[id]=0; });
+    edges.forEach(function(key){
+        var p=key.split("-"), a=+p[0], b=+p[1];
+        if(adj[a]!==undefined && adj[b]!==undefined){
+            adj[a].push(b); adj[b].push(a);
+            deg[a]++; deg[b]++;
+        }
+    });
+
+    var maxDeg = 0;
+    nodeIds.forEach(function(id){ if(deg[id]>maxDeg) maxDeg=deg[id]; });
+    if(!maxDeg) maxDeg=1;
+
+    // Separate connected nodes from isolated nodes (degree=0)
+    var connected = nodeIds.filter(function(id){ return deg[id]>0; });
+    var isolated  = nodeIds.filter(function(id){ return deg[id]===0; });
+
+    // Initial positions: connected nodes on concentric rings by degree
+    var pos = {};
+    var sorted = connected.slice().sort(function(a,b){ return deg[b]-deg[a]; });
+    sorted.forEach(function(id, i){
+        var degRatio = deg[id]/maxDeg;
+        var initRadius = Math.min(CW,CH) * (0.05 + (1-degRatio)*0.35);
+        var angle = (i / Math.max(connected.length,1)) * 2*Math.PI - Math.PI/2;
+        pos[id] = { x: cx + initRadius*Math.cos(angle), y: cy + initRadius*Math.sin(angle) };
+    });
+
+    // Isolated nodes: place evenly on outer ring, fixed (no force needed)
+    var outerR = Math.min(CW,CH) * 0.44;
+    isolated.forEach(function(id, i){
+        var angle = (i / Math.max(isolated.length,1)) * 2*Math.PI - Math.PI/2;
+        pos[id] = { x: cx + outerR*Math.cos(angle), y: cy + outerR*Math.sin(angle) };
+    });
+
+    // Run force-directed iterations on CONNECTED nodes only
+    var K = Math.sqrt(CW*CH/Math.max(connected.length,1)) * 1.1;
+    var iters = 180;
+    for(var iter=0; iter<iters; iter++){
+        var disp = {};
+        connected.forEach(function(id){ disp[id]={x:0,y:0}; });
+
+        // Repulsion between connected pairs only
+        for(var i=0;i<connected.length;i++){
+            for(var j=i+1;j<connected.length;j++){
+                var u=connected[i], v=connected[j];
+                var dx=pos[u].x-pos[v].x, dy=pos[u].y-pos[v].y;
+                var dist=Math.sqrt(dx*dx+dy*dy)||0.1;
+                var rep=K*K/dist;
+                disp[u].x+=dx/dist*rep; disp[u].y+=dy/dist*rep;
+                disp[v].x-=dx/dist*rep; disp[v].y-=dy/dist*rep;
+            }
+        }
+
+        // Attraction along edges
+        edges.forEach(function(key){
+            var p=key.split("-"), a=+p[0], b=+p[1];
+            if(pos[a]===undefined||pos[b]===undefined) return;
+            var dx=pos[a].x-pos[b].x, dy=pos[a].y-pos[b].y;
+            var dist=Math.sqrt(dx*dx+dy*dy)||0.1;
+            var att=dist*dist/K;
+            disp[a].x-=dx/dist*att; disp[a].y-=dy/dist*att;
+            disp[b].x+=dx/dist*att; disp[b].y+=dy/dist*att;
+        });
+
+        // Degree-weighted gravity toward center
+        connected.forEach(function(id){
+            var degRatio = deg[id]/maxDeg;
+            var grav = 0.04 + degRatio*0.22;   // stronger: 0.04→0.26
+            disp[id].x += (cx-pos[id].x)*grav;
+            disp[id].y += (cy-pos[id].y)*grav;
+        });
+
+        // Apply with cooling
+        var temp = Math.max(1, Math.min(CW,CH)*0.14*(1-iter/iters));
+        connected.forEach(function(id){
+            var dx=disp[id].x, dy=disp[id].y;
+            var d=Math.sqrt(dx*dx+dy*dy)||0.1;
+            var step=Math.min(d,temp);
+            pos[id].x=Math.max(pad,Math.min(W-pad, pos[id].x+dx/d*step));
+            pos[id].y=Math.max(pad,Math.min(H-pad, pos[id].y+dy/d*step));
+        });
+    }
+    return pos;
+}
+
+// Draw a network using force-directed layout (ignores original node coordinates)
+function drawNetwork(nodeIds, edges, W, H, canvas, egoId, highlightEgo, posOverride) {
+    var ctx=canvas.getContext("2d");
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle="#fff"; ctx.fillRect(0,0,W,H);
+
+    if(!nodeIds.length) return;
+    var pos = posOverride || forceLayoutFromEdges(nodeIds, edges, W, H, egoId!==undefined?egoId:0);
+
+    // draw edges
+    ctx.strokeStyle="#c0ccd8"; ctx.lineWidth=Math.max(1,W/200);
+    edges.forEach(function(key){
+        var p=key.split("-"),a=+p[0],b=+p[1];
+        if(!pos[a]||!pos[b]) return;
+        ctx.beginPath();ctx.moveTo(pos[a].x,pos[a].y);ctx.lineTo(pos[b].x,pos[b].y);ctx.stroke();
+    });
+
+    // uniform node radius — same for all nodes
+    var r = Math.max(10, W/26);
+    nodeIds.forEach(function(id){
+        if(!pos[id]) return;
+        var x=pos[id].x, y=pos[id].y;
+        var isMe=(id===(egoId!==undefined?egoId:0));
+
+        ctx.beginPath();ctx.arc(x,y,r,0,2*Math.PI);
+        ctx.fillStyle=isMe?(highlightEgo?"#e07030":"#4a90d9"):"#7ab0d8";
+        ctx.fill();
+        ctx.strokeStyle=isMe?(highlightEgo?"#b04010":"#1a6aaa"):"#5080a0";
+        ctx.lineWidth=Math.max(1,W/180); ctx.stroke();
+
+        var fs=Math.max(8,Math.round(W/32));
+        ctx.fillStyle="#fff";
+        ctx.font="bold "+fs+"px 'Microsoft YaHei',Arial"; ctx.textAlign="center";
+        ctx.textBaseline="middle";
+        ctx.fillText(isMe?"我":String(id), x, y);
+        ctx.textBaseline="alphabetic";
+    });
+    return pos; // return pos so caller can store it for drag
+}
+
+function renderRepPage(nodeN) {
+    var content=document.getElementById("repContent");
+    content.innerHTML="<div style='color:#aaa;padding:40px;text-align:center;'>计算中…</div>";
+
+    var groups={};
+    allData.forEach(function(r){
+        var tIdx=getTaskIdxForN(r,nodeN); if(tIdx<0) return;
+        var gJson=[r.net_graph_t1,r.net_graph_t2,r.net_graph_t3][tIdx];
+        var g=parseGraphJson(gJson); if(!g) return;
+        var deg=parseInt(r["net_ego_degree_n"+nodeN]);
+        if(isNaN(deg)||deg<1||deg>=nodeN) return;
+        var ds=degreeSequence(g);
+        if(!groups[deg]) groups[deg]=[];
+        groups[deg].push({r:r,g:g,tIdx:tIdx,nn:nodeN,deg:deg,degSeq:ds});
+    });
+
+    setTimeout(function(){
+        var W=240, H=200, rW=160, rH=130;
+        var html="";
+
+        for(var d=1;d<nodeN;d++){
+            var items=groups[d]; if(!items||!items.length) continue;
+            var meanSeq=meanDegreeSequence(items);
+            var ranked=items.slice().map(function(item){
+                return{item:item,dist:seqDist(item.degSeq,meanSeq)};
+            }).sort(function(a,b){return a.dist-b.dist;});
+            var best=ranked[0].item;
+            var runners=ranked.slice(1,10).map(function(x){return x.item;});
+
+            html+='<div class="rep-group">';
+            html+='<div class="rep-group-header">';
+            html+='<h3>Ego Degree = '+d+'</h3>';
+            html+='<div style="display:flex;align-items:center;gap:12px;">';
+            html+='<span style="font-size:12px;color:#888;">'+items.length+' 人 &nbsp;|&nbsp; 均值度数序列: ['+meanSeq.map(function(x){return x.toFixed(1);}).join(", ")+']</span>';
+            html+='<button class="btn btn-small btn-orange" onclick="dlRepGroup('+nodeN+","+d+')">⬇ 下载本组</button>';
+            html+='</div></div>';
+            html+='<div class="rep-row">';
+
+            // best card: original + force side by side
+            html+='<div class="rep-card best">';
+            html+='<div class="rep-card-tag best">🔵 最佳代表图</div>';
+            html+='<div style="display:flex;gap:6px;align-items:flex-start;">';
+            html+='<div style="text-align:center;">';
+            html+='<canvas id="repBest_'+d+'" width="'+W+'" height="'+H+'"></canvas>';
+            html+='<div style="font-size:10px;color:#aaa;margin-top:2px;">原始布局</div>';
+            html+='</div>';
+            html+='<div style="text-align:center;">';
+            html+='<div class="force-canvas-wrap">';
+            html+='<canvas id="repBestF_'+d+'" width="'+W+'" height="'+H+'" class="force-editable"></canvas>';
+            html+='<button class="force-dl-btn" style="right:28px;" onclick="copyForceCoords(\'repBestF_'+d+'\')">📋</button>';
+            html+='<button class="force-dl-btn" onclick="dlForceCanvas(\'repBestF_'+d+'\',\'最佳代表_deg'+d+'\')">⬇</button>';
+            html+='</div>';
+            html+='<div style="font-size:10px;color:#aaa;margin-top:2px;">整洁化布局（可拖动节点）</div>';
+            html+='</div></div>';
+            html+='<div class="rep-card-label">';
+            html+=n(best.r.class_name)+' 学号'+n(best.r.student_id)+'<br>';
+            html+='度数序列: ['+best.degSeq.join(", ")+']<br>';
+            html+='<span style="color:#4a90d9;">距均值: '+seqDist(best.degSeq,meanSeq).toFixed(3)+'</span>';
+            html+='</div></div>';
+
+            html+='<div style="width:1px;background:#eee;margin:0 8px;align-self:stretch;"></div>';
+            html+='<div>';
+            html+='<div style="font-size:11px;color:#888;margin-bottom:8px;font-weight:bold;">其他接近代表图（按度数序列相似度排序）</div>';
+            html+='<div class="rep-runners">';
+            runners.forEach(function(item,ri){
+                html+='<div class="rep-runner">';
+                html+='<div style="display:flex;gap:4px;">';
+                html+='<div style="text-align:center;">';
+                html+='<canvas id="repR_'+d+'_'+ri+'" width="'+rW+'" height="'+rH+'"></canvas>';
+                html+='<div style="font-size:9px;color:#bbb;">原始</div>';
+                html+='</div>';
+                html+='<div style="text-align:center;">';
+                html+='<div class="force-canvas-wrap">';
+                html+='<canvas id="repRF_'+d+'_'+ri+'" width="'+rW+'" height="'+rH+'" class="force-editable"></canvas>';
+                html+='<button class="force-dl-btn" style="right:28px;" onclick="copyForceCoords(\'repRF_'+d+'_'+ri+'\')">📋</button>';
+                html+='<button class="force-dl-btn" onclick="dlForceCanvas(\'repRF_'+d+'_'+ri+'\',\'候选'+(ri+1)+'_deg'+d+'\')">⬇</button>';
+                html+='</div>';
+                html+='<div style="font-size:9px;color:#bbb;">整洁化（可拖动）</div>';
+                html+='</div></div>';
+                html+='<div class="rep-runner-label">'+n(item.r.class_name)+' '+n(item.r.student_id)+'<br>['+item.degSeq.join(",")+'] d='+seqDist(item.degSeq,meanSeq).toFixed(2)+'</div>';
+                html+='</div>';
+            });
+            html+='</div></div></div></div>';
+        }
+
+        if(!html) html='<div style="color:#bbb;padding:40px;">暂无数据</div>';
+        content.innerHTML=html;
+
+        for(var d2=1;d2<nodeN;d2++){
+            var items2=groups[d2]; if(!items2||!items2.length) continue;
+            var meanSeq2=meanDegreeSequence(items2);
+            var ranked2=items2.slice().map(function(item){
+                return{item:item,dist:seqDist(item.degSeq,meanSeq2)};
+            }).sort(function(a,b){return a.dist-b.dist;});
+            var best2=ranked2[0].item;
+            var runners2=ranked2.slice(1,10).map(function(x){return x.item;});
+
+            // draw best — original layout
+            var bc=document.getElementById("repBest_"+d2);
+            if(bc){
+                var bIds=[]; best2.g.nodes.forEach(function(nd){bIds.push(nd.id);});
+                drawOrgOrig(best2.g, best2.nn, best2.deg, bc, W, H);
+            }
+            // draw best — force layout (draggable)
+            var bcF=document.getElementById("repBestF_"+d2);
+            if(bcF){
+                var bIdsF=[]; best2.g.nodes.forEach(function(nd){bIdsF.push(nd.id);});
+                var posF=drawNetwork(bIdsF,best2.g.edges,W,H,bcF,0,false);
+                bindDragCanvas(bcF,bIdsF,best2.g.edges,posF,W,H,0,false);
+            }
+
+            runners2.forEach(function(item,ri){
+                // original
+                var rc=document.getElementById("repR_"+d2+"_"+ri);
+                if(rc) drawOrgOrig(item.g, item.nn, item.deg, rc, rW, rH);
+                // force (draggable)
+                var rcF=document.getElementById("repRF_"+d2+"_"+ri);
+                if(rcF){
+                    var rIds=[]; item.g.nodes.forEach(function(nd){rIds.push(nd.id);});
+                    var posRF=drawNetwork(rIds,item.g.edges,rW,rH,rcF,0,false);
+                    bindDragCanvas(rcF,rIds,item.g.edges,posRF,rW,rH,0,false);
+                }
+            });
+
+            if(!window._repGroups) window._repGroups={};
+            if(!window._repGroups[nodeN]) window._repGroups[nodeN]={};
+            window._repGroups[nodeN][d2]={items:items2,meanSeq:meanSeq2,best:best2,runners:runners2,nodeN:nodeN};
+        }
+    }, 30);
+}
+
+async function dlRepGroup(nodeN, deg) {
+    var grp=(window._repGroups||{})[nodeN];
+    if(!grp||!grp[deg]) return;
+    var g=grp[deg], W=900, H=720, rW=480, rH=380;
+    var zipObj=new MiniZip();
+    var DPR=2;
+
+    // best representative
+    if(g.best){
+        var oc2=document.createElement("canvas"); oc2.width=W*DPR; oc2.height=H*DPR;
+        var ctx2=oc2.getContext("2d"); ctx2.scale(DPR,DPR);
+        var bIds2=[]; g.best.g.nodes.forEach(function(nd){bIds2.push(nd.id);});
+        drawNetwork(bIds2, g.best.g.edges, W, H, oc2, 0, false);
+        var b2=await canvasToBytes(oc2);
+        zipObj.addFile("01_最佳代表_"+n(g.best.r.class_name)+"_"+n(g.best.r.student_id)+"_["+g.best.degSeq.join(",")+"].png",b2);
+    }
+
+    // runners
+    for(var ri=0;ri<g.runners.length;ri++){
+        var item=g.runners[ri];
+        var oc3=document.createElement("canvas"); oc3.width=rW*DPR; oc3.height=rH*DPR;
+        var ctx3=oc3.getContext("2d"); ctx3.scale(DPR,DPR);
+        var rIds=[]; item.g.nodes.forEach(function(nd){rIds.push(nd.id);});
+        drawNetwork(rIds, item.g.edges, rW, rH, oc3, 0, false);
+        var b3=await canvasToBytes(oc3);
+        zipObj.addFile("0"+(ri+2)+"_候选"+(ri+1)+"_"+n(item.r.class_name)+"_"+n(item.r.student_id)+"_["+item.degSeq.join(",")+"].png",b3);
+    }
+
+    var blob=new Blob([zipObj.generate()],{type:"application/zip"});
+    var url=URL.createObjectURL(blob),a=document.createElement("a");
+    a.href=url; a.download="代表性图_N"+nodeN+"_degree"+deg+".zip";
+    document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
+function canvasToBytes(canvas){
+    return new Promise(function(resolve){
+        canvas.toBlob(function(blob){var fr=new FileReader();fr.onload=function(){resolve(new Uint8Array(fr.result));};fr.readAsArrayBuffer(blob);},"image/png");
+    });
+}
+
+// ── Draggable force-layout canvas ─────────────────────────────────────────────
+function bindDragCanvas(canvas, nodeIds, edges, pos, W, H, egoId, highlightEgo) {
+    var r = Math.max(10, W/26); // same radius used in drawNetwork
+    var dragging = null, offsetX=0, offsetY=0;
+
+    function nodeAt(x, y) {
+        for(var i=0; i<nodeIds.length; i++){
+            var id=nodeIds[i], p=pos[id];
+            if(!p) continue;
+            if(Math.sqrt((x-p.x)*(x-p.y<0?-(x-p.x):x-p.x)+(y-p.y)*(y-p.y))<=r+4) return id;
+            // proper distance check:
+            if(Math.sqrt(Math.pow(x-p.x,2)+Math.pow(y-p.y,2))<=r+4) return id;
+        }
+        return null;
+    }
+
+    function getXY(e) {
+        var rect=canvas.getBoundingClientRect();
+        var scaleX=W/rect.width, scaleY=H/rect.height;
+        var src=e.touches?e.touches[0]:e;
+        return {x:(src.clientX-rect.left)*scaleX, y:(src.clientY-rect.top)*scaleY};
+    }
+
+    function onDown(e) {
+        var xy=getXY(e);
+        var id=nodeAt(xy.x,xy.y);
+        if(id===null) return;
+        dragging=id; offsetX=xy.x-pos[id].x; offsetY=xy.y-pos[id].y;
+        e.preventDefault();
+    }
+    function onMove(e) {
+        if(dragging===null) return;
+        var xy=getXY(e);
+        pos[dragging].x=Math.max(r+2,Math.min(W-r-2, xy.x-offsetX));
+        pos[dragging].y=Math.max(r+2,Math.min(H-r-2, xy.y-offsetY));
+        drawNetwork(nodeIds, edges, W, H, canvas, egoId, highlightEgo, pos);
+        e.preventDefault();
+    }
+    function onUp() { dragging=null; }
+
+    canvas.addEventListener("mousedown",  onDown);
+    canvas.addEventListener("mousemove",  onMove);
+    canvas.addEventListener("mouseup",    onUp);
+    canvas.addEventListener("mouseleave", onUp);
+    canvas.addEventListener("touchstart", onDown, {passive:false});
+    canvas.addEventListener("touchmove",  onMove, {passive:false});
+    canvas.addEventListener("touchend",   onUp);
+    canvas._networkPos = pos;
+    canvas._nodeIds = nodeIds;
+    canvas._edges = edges;
+    canvas._egoId = egoId;
+}
+
+function copyForceCoords(canvasId) {
+    var canvas = document.getElementById(canvasId);
+    if(!canvas || !canvas._networkPos || !canvas._nodeIds) {
+        alert("暂无坐标数据，请先生成图形。"); return;
+    }
+    var pos = canvas._networkPos;
+    var nodeIds = canvas._nodeIds;
+    var edges = canvas._edges || [];
+
+    // Same format as experiment CSV net_graph_t1/t2/t3
+    var graph = {
+        nodes: nodeIds.map(function(id){
+            return {
+                id: id,
+                x: Math.round(pos[id].x),
+                y: Math.round(pos[id].y)
+            };
+        }),
+        edges: edges
+    };
+
+    var text = JSON.stringify(graph, null, 2);
+
+    navigator.clipboard.writeText(text).then(function(){
+        var btns = canvas.parentElement.querySelectorAll(".force-dl-btn");
+        btns.forEach(function(b){
+            if(b.textContent==="📋"){ b.textContent="✓"; setTimeout(function(){b.textContent="📋";},1500); }
+        });
+    }).catch(function(){
+        window.prompt("复制以下坐标数据：", text);
+    });
+}
+
+function dlForceCanvas(canvasId, label) {
+    var canvas = document.getElementById(canvasId);
+    if(!canvas) return;
+
+    var pos = canvas._networkPos;
+    var nodeIds = canvas._nodeIds;
+    var edges = canvas._edges;
+    var egoId = canvas._egoId;
+
+    if(!pos || !nodeIds) {
+        canvas.toBlob(function(blob){
+            var url=URL.createObjectURL(blob), a=document.createElement("a");
+            a.href=url; a.download=label+"_整洁化.png";
+            document.body.appendChild(a); a.click();
+            document.body.removeChild(a); URL.revokeObjectURL(url);
+        },"image/png");
+        return;
+    }
+
+    // Fixed output size for all force canvases (same as best representative)
+    var DPR = 4, W = 240, H = 200;
+    var srcW = canvas.width, srcH = canvas.height;
+
+    // Scale positions from original canvas size to output size
+    var scaledPos = {};
+    Object.keys(pos).forEach(function(id){
+        scaledPos[id] = {
+            x: pos[id].x / srcW * W,
+            y: pos[id].y / srcH * H
+        };
+    });
+
+    var oc = document.createElement("canvas");
+    oc.width = W*DPR; oc.height = H*DPR;
+    var octx = oc.getContext("2d"); octx.scale(DPR, DPR);
+    drawNetwork(nodeIds, edges, W, H, oc, egoId||0, false, scaledPos);
+
+    oc.toBlob(function(blob){
+        var url=URL.createObjectURL(blob), a=document.createElement("a");
+        a.href=url; a.download=label+"_整洁化.png";
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a); URL.revokeObjectURL(url);
+    },"image/png");
+}
+
+document.getElementById("uploadZipBtn").addEventListener("click", function(){
+    document.getElementById("uploadModal").classList.add("open");
+});
+document.getElementById("uploadModalClose").addEventListener("click", function(){
+    document.getElementById("uploadModal").classList.remove("open");
+});
+document.getElementById("uploadModal").addEventListener("click", function(e){
+    if(e.target===this) this.classList.remove("open");
+});
+
+var dropZone  = document.getElementById("zipDropZone");
+var fileInput = document.getElementById("zipFileInput");
+dropZone.addEventListener("click", function(){ fileInput.click(); });
+dropZone.addEventListener("dragover", function(e){
+    e.preventDefault(); dropZone.style.borderColor="#4a90d9"; dropZone.style.background="#eef6ff";
+});
+dropZone.addEventListener("dragleave", function(){
+    dropZone.style.borderColor="#c0cfe0"; dropZone.style.background="#fafcff";
+});
+dropZone.addEventListener("drop", function(e){
+    e.preventDefault(); dropZone.style.borderColor="#c0cfe0"; dropZone.style.background="#fafcff";
+    Array.from(e.dataTransfer.files).filter(function(f){return f.name.endsWith(".zip");}).forEach(readZipFile);
+});
+fileInput.addEventListener("change", function(){
+    Array.from(fileInput.files).forEach(readZipFile); fileInput.value="";
+});
+
+var zipQueue = [];
+
+function parseZip(buffer) {
+    var bytes = new Uint8Array(buffer), files = [], i = 0;
+    while (i < bytes.length - 4) {
+        if (bytes[i]===0x50&&bytes[i+1]===0x4B&&bytes[i+2]===0x03&&bytes[i+3]===0x04) {
+            var fnLen    = bytes[i+26]|(bytes[i+27]<<8);
+            var extraLen = bytes[i+28]|(bytes[i+29]<<8);
+            var compSize = (bytes[i+18])|(bytes[i+19]<<8)|(bytes[i+20]<<16)|(bytes[i+21]<<24);
+            var name     = new TextDecoder("utf-8").decode(bytes.slice(i+30, i+30+fnLen));
+            var dataStart= i+30+fnLen+extraLen;
+            files.push({ name:name, data:bytes.slice(dataStart, dataStart+compSize) });
+            i = dataStart + compSize;
+        } else { i++; }
+    }
+    return files;
+}
+
+function parseCSV(uint8Array) {
+    var text = new TextDecoder("utf-8").decode(uint8Array);
+    if (text.charCodeAt(0)===0xFEFF) text = text.slice(1);
+    text = text.replace(/\r\n/g,"\n").replace(/\r/g,"\n");
+    function parseRows(str) {
+        var rows=[],cur=[],field="",inQ=false,i=0;
+        while(i<str.length){
+            var c=str[i];
+            if(inQ){ if(c==='"'){if(str[i+1]==='"'){field+='"';i+=2;continue;}else{inQ=false;i++;continue;}}field+=c;i++; }
+            else{ if(c==='"'){inQ=true;i++;}else if(c===","){cur.push(field);field="";i++;}else if(c==="\n"){cur.push(field);field="";if(cur.some(function(f){return f!="";}))rows.push(cur);cur=[];i++;}else{field+=c;i++;} }
+        }
+        if(field!==""||cur.length>0){cur.push(field);rows.push(cur);}
+        return rows;
+    }
+    var rows=parseRows(text);
+    if(rows.length<2) return [];
+    var headers=rows[0], result=[];
+    for(var i=1;i<rows.length;i++){
+        if(rows[i].every(function(v){return v==="";})) continue;
+        var obj={};
+        headers.forEach(function(h,idx){ obj[h]=rows[i][idx]!==undefined?rows[i][idx]:""; });
+        result.push(obj);
+    }
+    return result;
+}
+
+function castRow(csvRow) {
+    var intFields = ["order_num","net_ego_degree_n6","t_order_n6","net_ego_degree_n8","t_order_n8","net_ego_degree_n10","t_order_n10"];
+    var numFields = [];
+    ["n6","n8","n10"].forEach(function(n){
+        ["net_ego_normalized_","net_ego_relative_","net_global_density_","net_global_centralization_",
+         "net_global_core_density_","net_global_core_semi_density_","net_global_core_peri_density_","net_global_peri_density_"
+        ].forEach(function(p){ numFields.push(p+n); });
+    });
+    var GRAPH_COLS = ["net_graph_t1","net_graph_t2","net_graph_t3"];
+    var out={};
+    Object.keys(csvRow).forEach(function(k){
+        var v=csvRow[k];
+        if(v===""||v===null||v===undefined){out[k]=null;return;}
+        if(GRAPH_COLS.indexOf(k)>=0){
+            // 修复 CSV 解析导致的双重引号转义：{"" -> {"
+            var fixed = v.replace(/""/g, '"');
+            // 如果首尾是多余的引号则去掉
+            if(fixed.charAt(0)==='"' && fixed.charAt(fixed.length-1)==='"'){
+                fixed = fixed.slice(1,-1);
+            }
+            out[k]=fixed; return;
+        }
+        if(intFields.indexOf(k)>=0){out[k]=parseInt(v);return;}
+        if(numFields.indexOf(k)>=0){out[k]=parseFloat(v);return;}
+        out[k]=v;
+    });
+    var DROP_COLS=["date"];
+    DROP_COLS.forEach(function(c){ delete out[c]; });
+    return out;
+}
+
+function readZipFile(file) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var entries  = parseZip(e.target.result);
+        var csvEntry = entries.find(function(f){ return f.name.endsWith(".csv"); });
+        if (!csvEntry) { addQueueItem(file.name, null, "error", "未找到 CSV 文件"); return; }
+        var rows = parseCSV(csvEntry.data);
+        if (!rows.length) { addQueueItem(file.name, null, "error", "CSV 为空"); return; }
+        var row = castRow(rows[0]);
+        zipQueue.push({ zipName:file.name, csvRow:row, status:"pending" });
+        addQueueItem(file.name, row, "pending", "");
+        document.getElementById("uploadQueue").style.display = "block";
+        document.getElementById("doUploadBtn").style.display = "inline-block";
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function addQueueItem(zipName, row, status, errMsg) {
+    var list  = document.getElementById("queueList");
+    var cls   = row ? (row.class_name||"—") : "—";
+    var sid   = row ? (row.student_id||"—") : "—";
+    var order = row ? (row.order_num||"—") : "—";
+    var div   = document.createElement("div");
+    div.style.cssText = "background:#f5f7fa;border-radius:6px;padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:13px;";
+    div.innerHTML =
+        '<span style="font-size:20px;">'+(status==="error"?"⚠️":"📦")+'</span>'+
+        '<div style="flex:1;min-width:0;">'+
+          '<div style="font-weight:bold;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+zipName+'</div>'+
+          '<div style="color:#888;font-size:11px;">班级：'+cls+'　学号：'+sid+'　顺序：'+order+'</div>'+
+          (errMsg?'<div class="err-msg">'+errMsg+'</div>':'')+
+        '</div>'+
+        '<span class="qi-status" style="font-size:12px;color:'+(status==="error"?"#d04020":"#aaa")+';">'+
+          (status==="error"?"解析失败":"等待上传")+
+        '</span>';
+    list.appendChild(div);
+}
+
+document.getElementById("doUploadBtn").addEventListener("click", async function(){
+    var btn=this; btn.disabled=true; btn.textContent="上传中…";
+    var items=document.querySelectorAll("#queueList > div");
+    var promises=zipQueue.map(function(item,qi){
+        if(item.status!=="pending") return Promise.resolve();
+        var el=items[qi], statusEl=el?el.querySelector(".qi-status"):null;
+        if(!statusEl) return Promise.resolve();
+        statusEl.style.color="#f0a030"; statusEl.textContent="上传中…";
+        return (async function(){
+            try {
+                var res=await db.insert("responses", item.csvRow);
+                if(res.error){
+                    item.status="error"; statusEl.style.color="#d04020"; statusEl.textContent="失败";
+                    var err=document.createElement("div"); err.className="err-msg";
+                    err.textContent=res.error.message.includes("duplicate")?"已存在该记录（重复）":"数据库错误: "+res.error.message;
+                    el.querySelector("div").appendChild(err);
+                } else {
+                    item.status="done"; statusEl.style.color="#3a9a3a"; statusEl.textContent="✓ 成功";
+                    el.style.background="#f0faf0";
+                }
+            } catch(e){
+                item.status="error"; statusEl.style.color="#d04020"; statusEl.textContent="失败";
+                var err=document.createElement("div"); err.className="err-msg"; err.textContent="异常: "+e.message;
+                el.querySelector("div").appendChild(err);
+            }
+        })();
+    });
+    await Promise.all(promises);
+    btn.textContent="全部处理完毕";
+    loadData();
+
+    // 重置队列，允许继续添加新文件，但保留列表记录
+    setTimeout(function(){
+        zipQueue = [];
+        btn.disabled = false;
+        btn.style.display = "none";
+        btn.textContent = "开始上传所有文件";
+    }, 2000);
+});
+</script>
+</body>
+</html>
