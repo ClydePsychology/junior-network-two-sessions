@@ -1,0 +1,1923 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>人际关系网络构建</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: "Microsoft YaHei", "PingFang SC", "SimHei", Arial, sans-serif;
+    background: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 30px 20px;
+    user-select: none;
+}
+
+.task-container {
+    background: #fff;
+    border: 2px solid #bbb;
+    border-radius: 4px;
+    width: 920px;
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.15);
+    position: relative;
+}
+
+/* ── top bar ── */
+.top-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 22px;
+    border-bottom: 1px solid #ddd;
+    background: #f7f9fc;
+}
+.top-bar .spacer { flex: 1; }
+.top-bar .title-text { font-size: 13px; color: #888; white-space: nowrap; }
+
+/* ── q-page (setup page) ── */
+.q-page { padding: 28px 36px 32px 36px; }
+.q-page h2 {
+    font-size: 17px; font-weight: bold; color: #222;
+    margin-bottom: 10px; padding-bottom: 8px;
+    border-bottom: 2px solid #4a90d9;
+}
+.q-section-title { font-size: 13px; color: #888; margin-bottom: 14px; line-height: 1.7; }
+.q-nav { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 24px; }
+.q-btn {
+    padding: 10px 28px; font-size: 15px; font-family: inherit;
+    font-weight: bold; border-radius: 4px; border: none;
+    cursor: pointer; transition: background 0.2s;
+}
+.q-btn-next { background: #4a90d9; color: #fff; }
+.q-btn-next:hover { background: #3278c0; }
+.q-btn-next:disabled { background: #aac8e8; cursor: not-allowed; }
+
+/* setup fields */
+.setup-field { margin-bottom: 20px; }
+.setup-field label {
+    display: block; font-size: 14px; font-weight: bold;
+    color: #444; margin-bottom: 8px;
+}
+.setup-field input[type=text] {
+    width: 260px; padding: 8px 12px; font-size: 15px;
+    font-family: inherit; border: 1.5px solid #ccc;
+    border-radius: 3px; outline: none;
+}
+.setup-field input[type=text]:focus { border-color: #4a90d9; }
+
+/* ── task header story ── */
+.task-header {
+    padding: 16px 22px 12px 22px;
+    border-bottom: 1px solid #ddd;
+}
+.task-header p { font-size: 14px; line-height: 1.85; color: #222; }
+
+/* ── members tray ── */
+.members-tray {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 22px 10px 22px;
+    border-bottom: 2px dashed #ccc;
+    background: #f7f9fc;
+    min-height: 80px;
+    position: relative;
+}
+.tray-hint {
+    position: absolute; bottom: 4px; right: 12px;
+    font-size: 11px; color: #aaa;
+}
+.member-chip {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 3px; cursor: grab; transition: opacity 0.15s;
+}
+.member-chip.placed { opacity: 0.18; cursor: default; pointer-events: none; }
+.member-chip .chip-label { font-size: 11px; font-weight: bold; color: #333; }
+
+/* ── main canvas + panel ── */
+.main-content {
+    display: flex; padding: 14px 22px 16px 22px; align-items: flex-start;
+}
+.canvas-wrapper {
+    flex: 1; border: 1.5px solid #bbb; background: #fff;
+    position: relative; overflow: hidden;
+}
+.canvas-wrapper.drag-over { border-color: #4a90d9; background: #f0f6ff; }
+canvas { display: block; }
+.drop-hint-overlay {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 15px; color: #bbb; pointer-events: none;
+    text-align: center; line-height: 2.2; transition: opacity 0.3s;
+}
+
+/* ── instructions panel ── */
+.instructions-panel {
+    width: 220px; padding: 14px 0 14px 20px;
+    font-size: 13.5px; line-height: 1.95; color: #222; flex-shrink: 0;
+}
+.instructions-panel p { margin-bottom: 5px; }
+.placed-counter { font-size: 12px; color: #888; margin-bottom: 2px; }
+.edge-counter { font-weight: bold; color: #d00; font-size: 14px; margin-top: 2px; }
+.edge-counter.complete { color: #090; }
+
+.finish-btn-wrapper { margin-top: 22px; text-align: center; }
+#finishBtn, #tutorialFinishBtn {
+    background: #ccc; border: 2px solid #999; border-radius: 4px;
+    padding: 10px 0; width: 100%; font-size: 18px; font-family: inherit;
+    font-weight: bold; cursor: not-allowed; color: #555; transition: background 0.2s, color 0.2s;
+}
+#finishBtn.ready, #tutorialFinishBtn.ready {
+    background: #7ecb5a; border-color: #5aab35; color: #fff; cursor: pointer;
+}
+#finishBtn.ready:hover, #tutorialFinishBtn.ready:hover { background: #6aba47; }
+
+/* ── drag ghost ── */
+#dragGhost {
+    position: fixed; pointer-events: none; z-index: 9999;
+    display: none; transform: translate(-50%, -50%);
+}
+
+/* ── tutorial overlay ── */
+#tutorialOverlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 8000;
+    background: rgba(0,0,0,0.55);
+    pointer-events: none;
+}
+.tutorial-bubble {
+    position: fixed; z-index: 9000;
+    background: #fff; border: 2.5px solid #4a90d9; border-radius: 12px;
+    padding: 28px 32px; width: 700px; height: 700px;
+    box-shadow: 0 8px 36px rgba(0,0,0,0.28);
+    font-size: 15px; line-height: 1.9; color: #222;
+    display: none;
+    pointer-events: auto;
+    left: 50%; transform: translateX(-50%);
+    box-sizing: border-box;
+    flex-direction: column;
+}
+.tutorial-bubble h3 {
+    font-size: 20px; color: #4a90d9; margin-bottom: 14px; flex-shrink: 0;
+}
+#tutBubbleBody {
+    display: flex; flex-direction: column; flex: 1 1 0; min-height: 0;
+}
+.tut-bubble-top { flex-shrink: 0; }
+.tut-diagram {
+    flex: 1 1 0; min-height: 0;
+    display: block; width: 100%;
+    border-radius: 8px;
+    background: #f4f8ff; border: 1px solid #c8daf5;
+    margin: 14px 0 10px;
+}
+.tut-bubble-bottom { flex-shrink: 0; margin-top: 4px; }
+.tutorial-bubble h3 { font-size: 20px; color: #4a90d9; margin-bottom: 14px; flex-shrink: 0; }
+.tutorial-bubble .bubble-arrow {
+    position: absolute; width: 14px; height: 14px;
+    background: #fff; border-left: 2.5px solid #4a90d9; border-top: 2.5px solid #4a90d9;
+}
+.tutorial-bubble .tut-btn {
+    display: block; flex-shrink: 0;
+    margin-top: 16px; padding: 12px 28px;
+    background: #4a90d9; color: #fff; border: none; border-radius: 6px;
+    font-size: 16px; font-family: inherit; font-weight: bold;
+    cursor: pointer; text-align: center; width: 100%;
+}
+.tutorial-bubble .tut-btn:hover { background: #3278c0; }
+
+/* highlight ring for tutorial */
+.tut-highlight {
+    position: fixed; z-index: 8500; border-radius: 8px;
+    box-shadow: 0 0 0 4px #ff9900, 0 0 0 7px rgba(255,153,0,0.3);
+    pointer-events: none; transition: all 0.3s ease;
+    display: none;
+}
+
+/* ── step indicator ── */
+.step-indicator {
+    display: flex; gap: 8px; margin-bottom: 4px; justify-content: center;
+    padding: 10px 22px 0;
+}
+.step-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #ddd; border: 2px solid #bbb; transition: background 0.3s;
+}
+.step-dot.active { background: #4a90d9; border-color: #4a90d9; }
+.step-dot.done   { background: #7ecb5a; border-color: #5aab35; }
+
+/* ── transition / done pages ── */
+.center-page { padding: 60px 36px; text-align: center; }
+.center-page h2 { font-size: 20px; margin-bottom: 18px; }
+.center-page p  { font-size: 15px; color: #555; line-height: 2; margin-bottom: 28px; }
+
+/* mobile warning */
+#mobileWarning {
+    display: none; position: fixed; inset: 0; z-index: 99999;
+    background: #1a2a3a; align-items: center; justify-content: center;
+    flex-direction: column; text-align: center; padding: 40px 28px;
+}
+#mobileWarning .mw-icon { font-size: 56px; margin-bottom: 20px; }
+#mobileWarning h2 { font-size: 20px; color: #fff; margin-bottom: 14px; }
+#mobileWarning p  { font-size: 14px; color: #aac8e8; line-height: 1.8; margin-bottom: 28px; }
+#mobileWarning button {
+    padding: 12px 32px; font-size: 14px; font-family: inherit;
+    background: #4a90d9; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;
+}
+</style>
+</head>
+<body>
+
+<!-- ══ MOBILE WARNING ══ -->
+<div id="mobileWarning">
+  <div class="mw-icon">💻</div>
+  <h2>请使用电脑参与本研究</h2>
+  <p>本研究需要使用<strong style="color:#fff;">电脑（Windows 或 macOS）</strong>进行操作。<br>
+     手机或平板设备无法完成实验任务。<br><br>请在电脑浏览器中打开本链接后再开始。</p>
+  <button onclick="document.getElementById('mobileWarning').style.display='none'">我已使用电脑，继续参与 →</button>
+</div>
+
+<!-- ══ DEV MODE INDICATOR ══ -->
+<div id="devModeLabel" style="display:none;position:fixed;top:8px;left:8px;z-index:999999;background:rgba(224,112,32,0.92);color:#fff;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:bold;font-family:inherit;pointer-events:none;">
+  🛠 开发者模式
+</div>
+
+<!-- ══ MASTER SKIP BUTTON ══ -->
+<div id="masterSkipBtn" style="display:none;position:fixed;bottom:24px;left:24px;z-index:999998;background:#e07020;color:#fff;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:bold;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.25);font-family:inherit;">
+  ⏭ 下一步
+</div>
+
+<!-- ══ PAGE: Setup ══ -->
+<div class="task-container" id="pageSetup">
+  <div class="q-page">
+    <h2>开始实验</h2>
+    <p class="q-section-title">请填写以下信息，填写完毕后点击"确认并开始"。</p>
+    <div class="setup-field">
+      <label for="inputClass">班级</label>
+      <input type="text" id="inputClass" placeholder="例如：701" maxlength="3" autocomplete="off" inputmode="numeric">
+    </div>
+    <div class="setup-field">
+      <label for="inputName">学号</label>
+      <input type="text" id="inputName" placeholder="请输入你的学号（两位数字）" maxlength="2" autocomplete="off" inputmode="numeric">
+    </div>
+    <div id="setupError" style="color:#e04040;font-size:13px;margin-top:-8px;display:none;">请填写班级和学号后继续。</div>
+    <div class="q-nav">
+      <button class="q-btn q-btn-next" id="setupNextBtn">确认并开始 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: Tutorial Intro ══ -->
+<div class="task-container" id="pageTutorialIntro" style="display:none;">
+  <div class="q-page center-page">
+    <h2 style="color:#4a90d9;">🎓 练习环节</h2>
+    <p>
+      在正式开始之前，我们先用一个<strong>练习任务</strong>来学会操作方法。<br>
+      练习中共有 <strong>6 位成员</strong>，你将学会：<br><br>
+      ① 如何将成员<strong>拖入</strong>画布中摆放位置<br>
+      ② 如何点击两个节点在它们之间<strong>连线</strong><br>
+      ③ 如何<strong>删除</strong>连线（再次点击两个已连线节点）<br>
+      ④ 如何在画布内<strong>拖动</strong>已放置的节点调整位置
+    </p>
+    <div class="q-nav" style="justify-content:center;">
+      <button class="q-btn q-btn-next" id="tutorialStartBtn">开始练习 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: Tutorial Task ══ -->
+<div class="task-container" id="pageTutorial" style="display:none;">
+
+    <div class="top-bar">
+        <span style="font-size:13px;color:#e07020;font-weight:bold;">🎓 练习环节（N=6）</span>
+        <div class="spacer"></div>
+        <span class="title-text">人际关系网络构建 — 操作练习</span>
+    </div>
+
+    <!-- step indicator -->
+    <div class="step-indicator" id="tutStepIndicator">
+        <div class="step-dot" id="dot0" title="概念引入"></div>
+        <div class="step-dot" id="dot1" title="连线"></div>
+        <div class="step-dot" id="dot2" title="删除连线"></div>
+        <div class="step-dot" id="dot3" title="移动节点"></div>
+        <div class="step-dot" id="dot4" title="自由练习"></div>
+        <div class="step-dot" id="dot5" title="完成"></div>
+    </div>
+
+    <div class="task-header">
+        <p>这是一个<b>练习场景</b>。请按照屏幕上的提示，<b>逐步学会操作方法</b>。</p>
+    </div>
+
+    <div class="members-tray" id="tutMembersTray">
+        <span class="tray-hint">↓ 拖入下方画布放置成员</span>
+    </div>
+
+    <div class="main-content">
+        <div class="canvas-wrapper" id="tutCanvasWrapper">
+            <canvas id="tutCanvas" width="2600" height="1760" style="width:650px;height:440px;display:block;"></canvas>
+            <div class="drop-hint-overlay" id="tutDropHint">将上方成员拖入此区域<br>全部放置后点击两个节点连线</div>
+        </div>
+        <div class="instructions-panel">
+            <p id="tutInstText" style="font-size:14px;line-height:1.9;color:#333;">
+                请先把上方所有成员<strong>拖入</strong>画布中。
+            </p>
+            <p class="placed-counter" id="tutPlacedCounter">已放置：0 / 6 人</p>
+            <p class="edge-counter"   id="tutEdgeCounter">当前连线：0</p>
+            <div class="finish-btn-wrapper">
+                <button id="tutorialFinishBtn" disabled>完成练习，开始正式任务</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ Tutorial Bubble ══ -->
+<div class="tutorial-bubble" id="tutBubble">
+    <h3 id="tutBubbleTitle">第 1 步</h3>
+    <div id="tutBubbleBody"></div>
+    <button class="tut-btn" id="tutBubbleBtn" style="display:none;"></button>
+</div>
+
+<!-- ══ Highlight ring ══ -->
+<div class="tut-highlight" id="tutHighlight"></div>
+
+<!-- ══ Tutorial overlay (darkens background) ══ -->
+<div id="tutorialOverlay"></div>
+
+<!-- ══ PAGE: Formal Task ══ -->
+<div class="task-container" id="taskContainer" style="display:none;">
+
+    <div class="top-bar">
+        <span style="font-size:13px;color:#1a5fa0;font-weight:bold;">
+            <span id="topBarInfo"></span>
+            &nbsp;|&nbsp; <span id="topBarTaskLabel"></span>
+        </span>
+        <div class="spacer"></div>
+        <span class="title-text">人际关系网络构建任务</span>
+    </div>
+
+    <div class="task-header">
+        <p>你加入了一个全新的社区青少年活动组织，成员年龄相仿，<b>彼此最初都不认识</b>。大家经常一起参加各种集体活动，比如小组讨论、户外实践、兴趣分享、团队游戏等。大家在轻松的氛围中自然熟悉，慢慢形成不同的交往关系——<b>有人</b>你很熟悉、经常一起玩，<b>有人</b>是朋友的朋友，<b>有人</b>交集不多，但你能清楚看到他们与其他人的互动。整个组织里的同伴关系并非只有一种紧密程度。</p>
+    </div>
+
+    <div class="members-tray" id="membersTray">
+        <span class="tray-hint">↓ 拖入下方画布放置成员</span>
+    </div>
+
+    <div class="main-content">
+        <div class="canvas-wrapper" id="canvasWrapper">
+            <canvas id="mainCanvas" width="2600" height="1760" style="width:650px;height:440px;display:block;"></canvas>
+            <div class="drop-hint-overlay" id="dropHint">将上方成员拖入此区域<br>全部放置后点击两个节点连线</div>
+        </div>
+        <div class="instructions-panel">
+            <p>请你以"<b>上帝视角</b>"（即跳出自身视角，以旁观者的角度客观审视整个群体的人际关系），构建这个组织的人际关系图。<b>注意：线段的长短不代表关系的远近。</b></p>
+            <p>屏幕上共有 <strong><span id="memberCount">10</span> 位成员</strong>（包括你）。</p>
+            <p>① 将所有成员从上方<strong>拖入</strong>画布摆放位置。</p>
+            <p>② 点击两个节点可<strong>连线</strong>（再次点击可删除）。</p>
+            <p>③ 请使用完整 <strong><span id="edgeCount_req">12</span> 条连线</strong>。</p>
+            <p class="placed-counter" id="placedCounter">已放置：0 / — 人</p>
+            <p class="edge-counter"   id="edgeCounter">当前连线：0 / —</p>
+            <div class="finish-btn-wrapper">
+                <button id="finishBtn" disabled>完成本次任务</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ PAGE: Transition ══ -->
+<div class="task-container" id="pageTransition" style="display:none;">
+  <div class="q-page center-page">
+    <h2>第 <span id="transTaskNum"></span> 个任务已完成 ✓</h2>
+    <p>接下来请继续完成第 <span id="transNextNum"></span> 个任务。<br>准备好后，点击下方按钮开始。</p>
+    <div class="q-nav" style="justify-content:center;">
+      <button class="q-btn q-btn-next" id="transNextBtn">开始下一个任务 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: ED Transition ══ -->
+<div class="task-container" id="pageEDTransition" style="display:none;">
+  <div class="q-page center-page">
+    <h2>第 <span id="edTransNum"></span> 组选择已完成 ✓</h2>
+    <p>接下来请继续完成第 <span id="edTransNextNum"></span> 组选择。<br>准备好后，点击下方按钮开始。</p>
+    <div class="q-nav" style="justify-content:center;">
+      <button class="q-btn q-btn-next" id="edTransNextBtn">开始下一组 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: ED Intro ══ -->
+<div class="task-container" id="pageEDIntro" style="display:none;">
+  <div class="q-page center-page">
+    <h2 style="color:#4a90d9;">第二部分：社交圈选择</h2>
+    <p>
+      接下来你会看到一系列社交圈。<br>
+      请根据你在学校里<b>实际的人际交往情况</b>，选择哪张图更像你。<br><br>
+      每道题呈现两张图（<b>A</b> 和 <b>B</b>），图中的圆圈代表人，连线代表朋友关系。<br>
+      蓝色的那个圆圈（标有"<b>我</b>"）代表你。
+    </p>
+    <div class="q-nav" style="justify-content:center;">
+      <button class="q-btn q-btn-next" id="btnEDStart">开始 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: ED Trial ══ -->
+<div class="task-container" id="pageEDTrial" style="display:none;">
+
+  <div class="top-bar">
+    <span style="font-size:13px;color:#6a3acd;font-weight:bold;">
+      第二部分 &nbsp;|&nbsp; <span id="edTopLabel">选择题</span>
+    </span>
+    <div class="spacer"></div>
+    <span class="title-text">社交圈选择</span>
+  </div>
+
+  <!-- step dots reuse .step-indicator style -->
+  <div class="step-indicator" id="edStepDots" style="padding-top:12px;"></div>
+
+  <div class="task-header">
+    <p id="edQuestion" style="font-size:15px;font-weight:bold;color:#222;">请根据你在学校里实际的人际交往情况，选择哪张图更像你。</p>
+    <p id="edSubtext" style="font-size:13px;color:#888;margin-top:4px;"></p>
+  </div>
+
+  <!-- DC warning bar -->
+  <div id="dcWarnBar" style="display:none;background:#fff8e1;border-top:1px solid #f0c040;border-bottom:1px solid #f0c040;padding:8px 22px;font-size:13px;color:#7a5800;text-align:center;">
+    <span id="dcWarnText"></span>
+  </div>
+
+  <!-- AB cards area -->
+  <div style="display:flex;gap:18px;padding:14px 22px 10px 22px;align-items:stretch;">
+
+    <div id="cardA" style="flex:1;border:2px solid #ccc;border-radius:6px;padding:16px;cursor:pointer;transition:border-color .15s,background .15s;background:#fff;display:flex;flex-direction:column;align-items:center;">
+      <div style="font-size:13px;font-weight:bold;color:#6a3acd;letter-spacing:1px;margin-bottom:10px;pointer-events:none;">A</div>
+      <div id="netA" style="width:100%;background:#f7f9fc;border-radius:6px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;min-height:200px;pointer-events:none;"></div>
+      <div id="descA" style="font-size:13px;color:#666;margin-top:10px;text-align:center;pointer-events:none;"></div>
+    </div>
+
+    <div id="cardB" style="flex:1;border:2px solid #ccc;border-radius:6px;padding:16px;cursor:pointer;transition:border-color .15s,background .15s;background:#fff;display:flex;flex-direction:column;align-items:center;">
+      <div style="font-size:13px;font-weight:bold;color:#6a3acd;letter-spacing:1px;margin-bottom:10px;pointer-events:none;">B</div>
+      <div id="netB" style="width:100%;background:#f7f9fc;border-radius:6px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;min-height:200px;pointer-events:none;"></div>
+      <div id="descB" style="font-size:13px;color:#666;margin-top:10px;text-align:center;pointer-events:none;"></div>
+    </div>
+
+  </div>
+
+  <!-- confirm row -->
+  <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px 22px 20px;">
+    <button class="q-btn q-btn-next" id="btnEDConfirm" disabled style="min-width:160px;">确认选择</button>
+    <span id="edHint" style="font-size:12px;color:#aaa;">请先点击左边或右边的图</span>
+  </div>
+
+</div>
+
+<!-- ══ PAGE: All Done ══ -->
+<div class="task-container" id="pageAllDone" style="display:none;">
+  <div class="q-page center-page">
+    <h2>所有任务已完成 🎉</h2>
+    <p style="font-size:15px;color:#555;line-height:2;margin-bottom:20px;">感谢你的参与！</p>
+    <div id="uploadStatus" style="font-size:15px;color:#888;margin-bottom:20px;">正在上传数据，请稍候…</div>
+    <div class="q-nav" style="justify-content:center;">
+      <button class="q-btn" id="dlZipBtn"
+        style="display:none;background:#4a90d9;color:#fff;font-size:15px;padding:11px 32px;">
+        下载本地备份（ZIP）
+      </button>
+    </div>
+    <p style="font-size:13px;color:#aaa;margin-top:16px;">请告诉老师你已经完成了。</p>
+  </div>
+</div>
+
+<div id="dragGhost"></div>
+
+<script>
+(function () {
+
+// ── Mobile detection ──────────────────────────────
+(function(){
+    var ua=navigator.userAgent;
+    var isMobile=/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i.test(ua);
+    if(isMobile||window.innerWidth<900) document.getElementById("mobileWarning").style.display="flex";
+})();
+
+// ── Supabase API ──────────────────────────────────
+var SUPABASE_URL = 'https://qlgedzdhzshqhqpiaula.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_6aQAwpMJWtz5H-QuHgc_RQ_ERsOeSip';
+
+async function dbInsert(row) {
+    try {
+        var res = await fetch(SUPABASE_URL + '/rest/v1/responses', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_KEY,
+                'Authorization': 'Bearer ' + SUPABASE_KEY,
+                'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify(row)
+        });
+        if (!res.ok) {
+            var err = await res.json().catch(function(){ return {}; });
+            return { error: { message: err.message || 'HTTP ' + res.status } };
+        }
+        return { error: null };
+    } catch(e) { return { error: { message: e.message } }; }
+}
+
+// ── Shared drawing constants ──────────────────────
+var DPR=4, ICON_R=26, HEAD_R=8, BODY_W=11, BODY_H=12;
+
+// ── Participant info ──────────────────────────────
+var participantClass="", participantName="";
+var startedAtMs=0, startedAt="";
+var tutorialStartMs=0, tutorialEndMs=0;
+var taskStartMs=[0,0,0], taskEndMs=[0,0,0];
+
+// ── Task state ────────────────────────────────────
+var ORDER_MAP = {1:[6,8,10],2:[6,10,8],3:[8,6,10],4:[8,10,6],5:[10,6,8],6:[10,8,6]};
+var REQ_MAP   = {6:8,8:10,10:12};
+var orderNum=1, taskOrder=[6,8,10], currentTask=0, savedResults=[];
+var meIndex=0;
+
+// ── Formal task state ─────────────────────────────
+var N=10, REQUIRED_EDGES=12;
+var placedNodes=[], edges={}, edgeCount=0, selectedNode=null;
+var draggingCanvas=null, dragMoved=false, trayDragging=null;
+var activeTray=null, activeCanvasWrapper=null, activeCtx=null;
+var activeCW=0, activeCH=0, activeCanvas=null;
+
+// ── Tutorial state ────────────────────────────────
+var TUT_N=6;
+var tutPlacedNodes=[], tutEdges={}, tutEdgeCount=0, tutSelectedNode=null;
+var tutDraggingCanvas=null, tutDragMoved=false, tutTrayDragging=null;
+var tutCtx, tutCanvas, tutCW, tutCH;
+var tutStep=0; // 0=place all, 1=draw edge, 2=delete edge, 3=move node, 4=done
+var tutOperationLocked=false; // true while bubble is showing; blocks canvas interaction
+
+// ══════════════════════════════════════════════════
+// SETUP PAGE
+// ══════════════════════════════════════════════════
+document.getElementById("setupNextBtn").addEventListener("click", function(){
+    var cls = document.getElementById("inputClass").value.trim();
+    var nm  = document.getElementById("inputName").value.trim();
+
+    // ── MASTERCODE: check first, bypass all validation ──
+    if (checkMasterCode(cls, nm)) {
+        document.getElementById("setupError").style.display="none";
+        participantClass=cls; participantName=nm;
+        orderNum=1; taskOrder=ORDER_MAP[1];
+        document.getElementById("topBarInfo").textContent=cls+" · 学号"+nm;
+        startedAtMs=Date.now(); startedAt=new Date().toISOString();
+        isMaster=true;
+        document.getElementById('masterSkipBtn').style.display='block';
+        document.getElementById('devModeLabel').style.display='block';
+        document.getElementById("pageSetup").style.display="none";
+        document.getElementById("pageTutorialIntro").style.display="block";
+        return;
+    }
+
+    var idNum = parseInt(nm, 10);
+    if(!/^\d{3}$/.test(cls) || !/^\d{2}$/.test(nm) || isNaN(idNum) || idNum < 1){
+        document.getElementById("setupError").innerHTML="请用<b>三位数字</b>填写班级（如：701），并用<b>两位数字</b>填写学号（如：03、12）。";
+        document.getElementById("setupError").style.display="block"; return;
+    }
+    document.getElementById("setupError").style.display="none";
+    participantClass=cls; participantName=nm;
+
+    // Order determined by student ID: 1,7,13,…→1; 2,8,14,…→2; … 6,12,18,…→6
+    orderNum=((idNum-1)%6)+1; taskOrder=ORDER_MAP[orderNum];
+    document.getElementById("topBarInfo").textContent=cls+" · 学号"+nm;
+    startedAtMs=Date.now();
+    startedAt=new Date().toISOString();
+    document.getElementById("pageSetup").style.display="none";
+    document.getElementById("pageTutorialIntro").style.display="block";
+});
+document.getElementById("inputName").addEventListener("keydown",function(e){if(e.key==="Enter")document.getElementById("setupNextBtn").click();});
+
+// ══════════════════════════════════════════════════
+// ICON DRAWING
+// ══════════════════════════════════════════════════
+function makeSVGIcon(isMe, size) {
+    var ns="http://www.w3.org/2000/svg", svg=document.createElementNS(ns,"svg");
+    svg.setAttribute("width",size); svg.setAttribute("height",size); svg.setAttribute("viewBox","0 0 52 52");
+    var fill=isMe?"#4a90d9":"#9ab8d8", stroke=isMe?"#2a6aaa":"#6090b0", bg=isMe?"#ddeeff":"#eef3f8";
+    var clipId="c"+Math.random().toString(36).slice(2);
+    var defs=document.createElementNS(ns,"defs"), cp=document.createElementNS(ns,"clipPath");
+    cp.setAttribute("id",clipId);
+    var cc=document.createElementNS(ns,"circle"); cc.setAttribute("cx","26"); cc.setAttribute("cy","26"); cc.setAttribute("r","23");
+    cp.appendChild(cc); defs.appendChild(cp);
+    var circle=document.createElementNS(ns,"circle"); circle.setAttribute("cx","26"); circle.setAttribute("cy","26"); circle.setAttribute("r","24");
+    circle.setAttribute("fill",bg); circle.setAttribute("stroke",stroke); circle.setAttribute("stroke-width","1.8");
+    var body=document.createElementNS(ns,"path"); body.setAttribute("d","M15 50 L37 50 L35 30 L17 30 Z");
+    body.setAttribute("fill",fill); body.setAttribute("stroke",stroke); body.setAttribute("stroke-width","1.2"); body.setAttribute("clip-path","url(#"+clipId+")");
+    var head=document.createElementNS(ns,"circle"); head.setAttribute("cx","26"); head.setAttribute("cy","21"); head.setAttribute("r","8");
+    head.setAttribute("fill",fill); head.setAttribute("stroke",stroke); head.setAttribute("stroke-width","1.2"); head.setAttribute("clip-path","url(#"+clipId+")");
+    svg.appendChild(defs); svg.appendChild(circle); svg.appendChild(body); svg.appendChild(head);
+    return svg;
+}
+
+function drawIcon(ctx, x, y, isMe, isSelected) {
+    var fill=isMe?"#4a90d9":"#9ab8d8", stroke=isMe?"#2a6aaa":"#6090b0", bg=isMe?"#ddeeff":"#eef3f8";
+    ctx.beginPath(); ctx.arc(x,y,ICON_R,0,2*Math.PI);
+    ctx.fillStyle=bg; ctx.fill();
+    ctx.strokeStyle=isSelected?"#ff9900":stroke; ctx.lineWidth=isSelected?2.8:1.8; ctx.stroke();
+    ctx.save(); ctx.beginPath(); ctx.arc(x,y,ICON_R-1,0,2*Math.PI); ctx.clip();
+    var hcy=y-5, bTop=hcy+HEAD_R+2;
+    ctx.beginPath(); ctx.moveTo(x-BODY_W/2+2,bTop); ctx.lineTo(x+BODY_W/2-2,bTop);
+    ctx.lineTo(x+BODY_W/2+2,bTop+BODY_H+8); ctx.lineTo(x-BODY_W/2-2,bTop+BODY_H+8); ctx.closePath();
+    ctx.fillStyle=fill; ctx.fill(); ctx.strokeStyle=stroke; ctx.lineWidth=1.2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(x,hcy,HEAD_R,0,2*Math.PI);
+    ctx.fillStyle=fill; ctx.fill(); ctx.strokeStyle=stroke; ctx.stroke();
+    ctx.restore();
+}
+
+// ══════════════════════════════════════════════════
+// TUTORIAL SYSTEM
+// ══════════════════════════════════════════════════
+document.getElementById("tutorialStartBtn").addEventListener("click", function(){
+    tutorialStartMs=Date.now();
+    document.getElementById("pageTutorialIntro").style.display="none";
+    document.getElementById("pageTutorial").style.display="block";
+    initTutorial();
+});
+
+function initTutorial(){
+    tutCanvas = document.getElementById("tutCanvas");
+    tutCtx    = tutCanvas.getContext("2d");
+    tutCtx.scale(DPR,DPR);
+    tutCW = tutCanvas.width/DPR;
+    tutCH = tutCanvas.height/DPR;
+    tutPlacedNodes=[]; tutEdges={}; tutEdgeCount=0; tutSelectedNode=null;
+    for(var i=0;i<TUT_N;i++) tutPlacedNodes.push(null);
+    buildTutTray();
+    tutDraw();
+    tutStep=0;
+    updateTutStep();
+    setDot(0,"active");
+    tutCanvas.addEventListener("mousedown",onTutCanvasDown);
+    tutCanvas.addEventListener("touchstart",onTutCanvasDown,{passive:false});
+}
+
+function buildTutTray(){
+    var tray=document.getElementById("tutMembersTray");
+    var existing=tray.querySelectorAll(".member-chip");
+    for(var i=0;i<existing.length;i++) tray.removeChild(existing[i]);
+    var hint=tray.querySelector(".tray-hint");
+    for(var i=0;i<TUT_N;i++){
+        var isMe=(i===0), chip=document.createElement("div");
+        chip.className="member-chip"; chip.dataset.idx=i;
+        chip.appendChild(makeSVGIcon(isMe,52));
+        var lbl=document.createElement("div"); lbl.className="chip-label"; lbl.textContent=isMe?"我":String(i);
+        chip.appendChild(lbl);
+        chip.addEventListener("mousedown",onTutTrayDown);
+        chip.addEventListener("touchstart",onTutTrayDown,{passive:false});
+        tray.insertBefore(chip,hint);
+    }
+}
+
+function tutDraw(){
+    tutCtx.clearRect(0,0,tutCW,tutCH);
+    var placed=0; for(var i=0;i<TUT_N;i++) if(tutPlacedNodes[i]) placed++;
+    document.getElementById("tutDropHint").style.opacity=placed===0?"1":"0";
+    // draw edges
+    tutCtx.strokeStyle="#555"; tutCtx.lineWidth=1.8;
+    for(var key in tutEdges){
+        var pts=key.split("-"), a=parseInt(pts[0]), b=parseInt(pts[1]);
+        if(!tutPlacedNodes[a]||!tutPlacedNodes[b]) continue;
+        tutCtx.beginPath(); tutCtx.moveTo(tutPlacedNodes[a].x,tutPlacedNodes[a].y);
+        tutCtx.lineTo(tutPlacedNodes[b].x,tutPlacedNodes[b].y); tutCtx.stroke();
+    }
+    // draw nodes
+    for(var i=0;i<TUT_N;i++){
+        if(!tutPlacedNodes[i]) continue;
+        var n=tutPlacedNodes[i]; drawIcon(tutCtx,n.x,n.y,i===0,i===tutSelectedNode);
+        tutCtx.fillStyle="#222"; tutCtx.font="bold 11px 'Microsoft YaHei',Arial";
+        tutCtx.textAlign="center"; tutCtx.fillText(i===0?"我":String(i),n.x,n.y+ICON_R+12);
+    }
+    // counters
+    var pc=0; for(var i=0;i<TUT_N;i++) if(tutPlacedNodes[i]) pc++;
+    document.getElementById("tutPlacedCounter").textContent="已放置："+pc+" / "+TUT_N+" 人";
+    if(tutStep===4){
+        var ec=document.getElementById("tutEdgeCounter");
+        ec.textContent="当前连线："+tutEdgeCount+" / 8";
+        ec.classList.toggle("complete", tutEdgeCount===8);
+        var fb=document.getElementById("tutorialFinishBtn");
+        fb.disabled=(tutEdgeCount!==8);
+        fb.classList.toggle("ready", tutEdgeCount===8);
+    } else {
+        document.getElementById("tutEdgeCounter").textContent="当前连线："+tutEdgeCount;
+        document.getElementById("tutEdgeCounter").classList.remove("complete");
+    }
+}
+
+// Tutorial steps control
+var tutStepDone = [false,false,false,false,false];
+
+function updateTutStep(){
+    var bubble=document.getElementById("tutBubble");
+    var title=document.getElementById("tutBubbleTitle");
+    var body=document.getElementById("tutBubbleBody");
+    var btn=document.getElementById("tutBubbleBtn");
+    var overlay=document.getElementById("tutorialOverlay");
+    var hl=document.getElementById("tutHighlight");
+
+    // ── SVG helper: draw one person node ──────────────────────────────────────
+    // cx,cy = center; isMe = blue/grey; clipId = unique clip id; label = name
+    function node(cx, cy, isMe, clipId, label){
+        var fill  = isMe ? "#4a90d9" : "#9ab8d8";
+        var stroke= isMe ? "#2a6aaa" : "#6090b0";
+        var bg    = isMe ? "#ddeeff" : "#eef3f8";
+        var r=36, hr=11, bx=14, by=15, bh=17;
+        return '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+bg+'" stroke="'+stroke+'" stroke-width="2.2"/>'
+             + '<clipPath id="'+clipId+'"><circle cx="'+cx+'" cy="'+cy+'" r="'+(r-1)+'"/></clipPath>'
+             + '<circle cx="'+cx+'" cy="'+(cy-9)+'" r="'+hr+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.5" clip-path="url(#'+clipId+')"/>'
+             + '<path d="M'+(cx-bx)+' '+(cy+bh+4)+' L'+(cx+bx)+' '+(cy+bh+4)+' L'+(cx+bx+3)+' '+(cy+4)+' L'+(cx-bx-3)+' '+(cy+4)+' Z"'
+             +   ' fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.3" clip-path="url(#'+clipId+')"/>'
+             + '<text x="'+cx+'" y="'+(cy+r+16)+'" text-anchor="middle" font-size="16" font-weight="bold"'
+             +   ' fill="'+(isMe?"#1a4a80":"#334455")+'" font-family="Microsoft YaHei,Arial">'+label+'</text>';
+    }
+
+    // Layout: diamond — top, left, right, bottom — inside a 340×340 viewBox
+    // top=小红(170,60)  left=小明(55,190)  right=小刚(285,190)  bottom=小花(170,300)
+    var N_TOP='170,60', N_LEFT='55,190', N_RIGHT='285,190', N_BOT='170,290';
+
+    var svgNodes = '<svg class="tut-diagram" viewBox="0 0 340 360" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">'
+        + '<text x="170" y="20" text-anchor="middle" font-size="13" fill="#7a9ac0" font-family="Microsoft YaHei,Arial" font-style="italic">每个圆圈 = 一个人</text>'
+        + node(170, 60,  false, 'na', '小红')
+        + node(55,  190, true,  'nb', '小明')
+        + node(285, 190, false, 'nc', '小刚')
+        + node(170, 300, false, 'nd', '小花')
+        + '</svg>';
+
+    var svgEdges = '<svg class="tut-diagram" viewBox="0 0 340 360" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">'
+        + '<text x="170" y="20" text-anchor="middle" font-size="13" fill="#7a9ac0" font-family="Microsoft YaHei,Arial" font-style="italic">连线 = 两人之间有来往 / 彼此为朋友</text>'
+        // grey edges
+        + '<line x1="170" y1="60"  x2="285" y2="190" stroke="#c0c8d8" stroke-width="2.2"/>'
+        + '<line x1="285" y1="190" x2="170" y2="300" stroke="#c0c8d8" stroke-width="2.2"/>'
+        + '<line x1="170" y1="60"  x2="55"  y2="190" stroke="#c0c8d8" stroke-width="2.2"/>'
+        // highlighted edge: 小明—小花 (orange)
+        + '<line x1="55" y1="190" x2="170" y2="300" stroke="#e07030" stroke-width="3.5"/>'
+        // label midpoint of highlighted edge ≈ (112, 245)
+        + '<rect x="72" y="240" width="134" height="24" rx="4" fill="white" fill-opacity="0.85"/>'
+        + '<text x="139" y="257" text-anchor="middle" font-size="13" fill="#e07030" font-family="Microsoft YaHei,Arial" font-weight="bold">有来往 / 彼此为朋友</text>'
+        // nodes on top of edges
+        + node(170, 60,  false, 'ea', '小红')
+        + node(55,  190, true,  'eb', '小明')
+        + node(285, 190, false, 'ec', '小刚')
+        + node(170, 300, false, 'ed', '小花')
+        + '</svg>';
+
+    // step texts
+    var steps=[
+        {
+            t:"💡 什么是人际关系网络？",
+            b:"<div class='tut-bubble-top'>"
+             +"在我们的生活里，每个人都和一些人有来往，和另一些人交集很少。<br><br>"
+             +"<b>人际关系网络</b>就是把这些关系画出来：<br>"
+             +"· 每个<b>圆圈</b>代表一个人<br>"
+             +"· 两人之间的<b>连线</b>表示他们有来往"
+             +"</div>"
+             + svgNodes
+             +"<div class='tut-bubble-bottom'>现在请你把所有成员<b>拖入</b>画布吧！</div>",
+            btn:"明白了，开始拖入成员"
+        },
+        {
+            t:"💡 连线代表什么？",
+            b:"<div class='tut-bubble-top'>"
+             +"太棒了！现在我们来<b>连线</b>。<br><br>"
+             +"如果两个人<b>互相认识、有来往</b>，就在他们之间连一条线。"
+             +"</div>"
+             + svgEdges
+             +"<div class='tut-bubble-bottom'>操作：<b>点击</b>一人（变橙色），再<b>点击</b>另一人即可连线。</div>",
+            btn:"明白了，开始连线"
+        },
+        {
+            t:"第 3 步：删除连线",
+            b:"连线成功！现在学习删除连线。<br><br>"
+             +"操作方法：再次点击已经连线的两个成员，两人之间的连线就会消失。<br><br>"
+             +"请试试删除刚刚那条连线。",
+            btn:"明白了，开始删除"
+        },
+        {
+            t:"第 4 步：移动成员位置",
+            b:"棒极了！最后一个操作：移动已放置的成员。<br><br>"
+             +"操作方法：在画布中，直接按住成员图标并拖动到新位置，松开即可。<br><br>"
+             +"请试试拖动画布中的某个成员到另一个位置。",
+            btn:"明白了，开始移动"
+        },
+        {
+            t:"✏️ 自由练习：构建你的网络",
+            b:"__FREE_PRACTICE__",   // special marker: rendered in panel, not bubble
+            btn:null
+        }
+    ];
+
+    var s=steps[tutStep];
+
+    // Step 4 = free practice: show bubble first, then panel instructions
+    if(tutStep===4){
+        hl.style.display="none";
+        // Render panel text
+        document.getElementById("tutInstText").innerHTML=
+            "<span style='font-size:15px;font-weight:bold;color:#4a90d9;'>✏️ 自由练习</span><br><br>"
+           +"随意想象这 6 个人之间的关系，把你觉得<b>有来往</b>的人连上线。<br><br>"
+           +"请连出恰好 <b>8 条连线</b>，完成后按钮会变绿。";
+        // finish button starts disabled
+        var fb=document.getElementById("tutorialFinishBtn");
+        fb.disabled=true; fb.classList.remove("ready");
+        // update dots
+        for(var i=0;i<6;i++){
+            var dot=document.getElementById("dot"+i);
+            if(i<tutStep) setDot(i,"done");
+            else if(i===tutStep) setDot(i,"active");
+            else setDot(i,"");
+        }
+        tutDraw();
+        // Show bubble prompt, lock operations until confirmed
+        tutOperationLocked=true;
+        title.textContent="✏️ 自由练习：构建你的网络";
+        body.innerHTML="操作都学会了！现在请随意想象这 6 个人之间的关系。<br><br>"
+            +"可以把他们想象成你认识的人，也可以完全虚构。<br><br>"
+            +"把你觉得彼此有来往、是朋友的人用连线连起来，连出恰好 8 条连线即可完成练习。";
+        btn.textContent="明白了，开始连线";
+        btn.style.display="block";
+        btn.onclick=function(){
+            bubble.style.display="none";
+            overlay.style.display="none";
+            tutOperationLocked=false;
+        };
+        bubble.style.display="flex";
+        bubble.style.transform="translate(-50%, -50%)";
+        bubble.style.left="50%";
+        bubble.style.top="50%";
+        bubble.style.right="auto";
+        bubble.style.width="700px";
+        bubble.style.height="auto";
+        bubble.style.minHeight="320px";
+        bubble.style.fontSize="15px";
+        bubble.style.padding="28px 32px";
+        overlay.style.display="block";
+        return;
+    }
+
+    title.textContent=s.t;
+    body.innerHTML=s.b;
+    if(s.btn){
+        btn.textContent=s.btn; btn.style.display="block";
+        btn.onclick=function(){
+            bubble.style.display="none";
+            overlay.style.display="none";
+            tutOperationLocked=false;
+        };
+    } else {
+        btn.style.display="none";
+    }
+
+    // Lock operations while bubble is visible
+    tutOperationLocked=true;
+
+    // position + show bubble
+    overlay.style.display="block";
+
+    if(tutStep===0||tutStep===1){
+        // Large diagram bubble: 700×700, centered on screen
+        bubble.style.display="flex";
+        bubble.style.transform="translate(-50%, -50%)";
+        bubble.style.left="50%";
+        bubble.style.top="50%";
+        bubble.style.right="auto";
+        bubble.style.width="700px";
+        bubble.style.height="700px";
+        bubble.style.fontSize="15px";
+        bubble.style.padding="28px 32px";
+    } else {
+        // Steps 2 & 3 hint bubble: wider, horizontally centered
+        bubble.style.display="block";
+        bubble.style.transform="translateX(-50%)";
+        bubble.style.left="50%";
+        bubble.style.right="auto";
+        bubble.style.width="500px";
+        bubble.style.height="auto";
+        bubble.style.fontSize="14.5px";
+        bubble.style.padding="22px 28px";
+        bubble.style.top=(function(){
+            var containerEl=document.getElementById("pageTutorial");
+            return containerEl ? Math.round(containerEl.getBoundingClientRect().top+80)+"px" : "160px";
+        })();
+    }
+
+    // update dots
+    for(var i=0;i<6;i++){
+        var dot=document.getElementById("dot"+i);
+        if(i<tutStep) setDot(i,"done");
+        else if(i===tutStep) setDot(i,"active");
+        else setDot(i,"");
+    }
+
+    // instructions panel text (steps 0-3 only; step 4 handled above)
+    var instTexts=[
+        "阅读左侧说明，然后把所有成员<strong>拖入</strong>画布中。",
+        "阅读左侧说明，然后<strong>点击</strong>两个不同的成员，为他们<strong>连线</strong>。",
+        "请再次点击同一对成员，<strong>删除</strong>那条连线。",
+        "请在画布内<strong>拖动</strong>某个成员到新位置。"
+    ];
+    document.getElementById("tutInstText").innerHTML=instTexts[tutStep]||"";
+}
+
+function setDot(i,state){
+    var dot=document.getElementById("dot"+i);
+    dot.className="step-dot";
+    if(state) dot.classList.add(state);
+}
+
+function advanceTutStep(newStep){
+    if(newStep<=tutStep) return;
+    tutStep=newStep;
+    setDot(tutStep-1,"done");
+    updateTutStep();
+}
+
+// Tutorial tray drag
+function onTutTrayDown(e){
+    var idx=parseInt(this.dataset.idx);
+    if(tutPlacedNodes[idx]) return;
+    if(tutOperationLocked) return; // bubble not yet confirmed
+    var p=getPointer(e);
+    tutTrayDragging=idx;
+    var ghost=document.getElementById("dragGhost");
+    ghost.innerHTML=""; ghost.appendChild(makeSVGIcon(idx===0,56));
+    ghost.style.display="block"; ghost.style.left=p.clientX+"px"; ghost.style.top=p.clientY+"px";
+    e.preventDefault();
+}
+
+function onTutCanvasDown(e){
+    if(!tutCtx) return;
+    if(tutOperationLocked) return; // bubble not yet confirmed
+    var p=getPointer(e), r=tutCanvas.getBoundingClientRect();
+    var x=p.clientX-r.left, y=p.clientY-r.top;
+    var hit=getTutNodeAt(x,y);
+    if(hit!==null){ tutDraggingCanvas=hit; tutDragMoved=false; e.preventDefault(); }
+}
+
+function getTutNodeAt(x,y){
+    for(var i=TUT_N-1;i>=0;i--){
+        if(!tutPlacedNodes[i]) continue;
+        var dx=x-tutPlacedNodes[i].x, dy=y-tutPlacedNodes[i].y;
+        if(Math.sqrt(dx*dx+dy*dy)<ICON_R+4) return i;
+    } return null;
+}
+
+function handleTutNodeClick(i){
+    if(tutSelectedNode===null){
+        tutSelectedNode=i; tutDraw();
+    } else if(tutSelectedNode===i){
+        tutSelectedNode=null; tutDraw();
+    } else {
+        var a=tutSelectedNode, b=i;
+        var key=a<b?(a+"-"+b):(b+"-"+a);
+        var wasConnected=!!tutEdges[key];
+        if(tutEdges[key]){ delete tutEdges[key]; tutEdgeCount--; }
+        else { tutEdges[key]=true; tutEdgeCount++; }
+        tutSelectedNode=null; tutDraw();
+
+        // advance tutorial
+        if(tutStep===1 && !wasConnected){
+            // drew an edge → go to step 2 (delete)
+            setTimeout(function(){ advanceTutStep(2); },400);
+        } else if(tutStep===2 && wasConnected){
+            // deleted an edge → go to step 3 (move)
+            setTimeout(function(){ advanceTutStep(3); },400);
+        }
+    }
+}
+
+// Tutorial finish button
+document.getElementById("tutorialFinishBtn").addEventListener("click", function(){
+    if(this.disabled) return;
+    tutorialEndMs=Date.now();
+    document.getElementById("pageTutorial").style.display="none";
+    currentTask=0; startFormalTask(currentTask);
+});
+
+// ══════════════════════════════════════════════════
+// SHARED POINTER HANDLERS
+// ══════════════════════════════════════════════════
+function getPointer(e){
+    if(e.touches&&e.touches.length>0) return{clientX:e.touches[0].clientX,clientY:e.touches[0].clientY};
+    if(e.changedTouches&&e.changedTouches.length>0) return{clientX:e.changedTouches[0].clientX,clientY:e.changedTouches[0].clientY};
+    return{clientX:e.clientX,clientY:e.clientY};
+}
+
+document.addEventListener("mousemove", onPointerMove);
+document.addEventListener("touchmove",  onPointerMove, {passive:false});
+document.addEventListener("mouseup",    onPointerUp);
+document.addEventListener("touchend",   onPointerUp);
+document.addEventListener("touchcancel",onPointerUp);
+
+function onPointerMove(e){
+    var p=getPointer(e);
+    var ghost=document.getElementById("dragGhost");
+
+    // tray dragging (either tutorial or formal)
+    if(tutTrayDragging!==null){
+        ghost.style.left=p.clientX+"px"; ghost.style.top=p.clientY+"px";
+        var r=document.getElementById("tutCanvasWrapper").getBoundingClientRect();
+        var over=p.clientX>=r.left&&p.clientX<=r.right&&p.clientY>=r.top&&p.clientY<=r.bottom;
+        document.getElementById("tutCanvasWrapper").classList.toggle("drag-over",over); e.preventDefault();
+    }
+    if(trayDragging!==null){
+        ghost.style.left=p.clientX+"px"; ghost.style.top=p.clientY+"px";
+        var r=document.getElementById("canvasWrapper").getBoundingClientRect();
+        var over=p.clientX>=r.left&&p.clientX<=r.right&&p.clientY>=r.top&&p.clientY<=r.bottom;
+        document.getElementById("canvasWrapper").classList.toggle("drag-over",over); e.preventDefault();
+    }
+
+    // canvas dragging (tutorial)
+    if(tutDraggingCanvas!==null){
+        var r=tutCanvas.getBoundingClientRect(), x=p.clientX-r.left, y=p.clientY-r.top;
+        if(Math.abs(x-tutPlacedNodes[tutDraggingCanvas].x)>3||Math.abs(y-tutPlacedNodes[tutDraggingCanvas].y)>3) tutDragMoved=true;
+        tutPlacedNodes[tutDraggingCanvas].x=Math.max(ICON_R+2,Math.min(tutCW-ICON_R-2,x));
+        tutPlacedNodes[tutDraggingCanvas].y=Math.max(ICON_R+2,Math.min(tutCH-ICON_R-2,y));
+        tutDraw(); e.preventDefault();
+    }
+
+    // canvas dragging (formal)
+    if(draggingCanvas!==null){
+        var mainCanvas=document.getElementById("mainCanvas");
+        var r=mainCanvas.getBoundingClientRect(), x=p.clientX-r.left, y=p.clientY-r.top;
+        if(Math.abs(x-placedNodes[draggingCanvas].x)>3||Math.abs(y-placedNodes[draggingCanvas].y)>3) dragMoved=true;
+        placedNodes[draggingCanvas].x=Math.max(ICON_R+2,Math.min(formalCW-ICON_R-2,x));
+        placedNodes[draggingCanvas].y=Math.max(ICON_R+2,Math.min(formalCH-ICON_R-2,y));
+        formalDraw(); e.preventDefault();
+    }
+}
+
+function onPointerUp(e){
+    var p=getPointer(e);
+    var ghost=document.getElementById("dragGhost");
+
+    // tutorial tray drop
+    if(tutTrayDragging!==null){
+        ghost.style.display="none";
+        document.getElementById("tutCanvasWrapper").classList.remove("drag-over");
+        var r=tutCanvas.getBoundingClientRect(), x=p.clientX-r.left, y=p.clientY-r.top;
+        if(x>=ICON_R&&x<=tutCW-ICON_R&&y>=ICON_R&&y<=tutCH-ICON_R){
+            tutPlacedNodes[tutTrayDragging]={x:x,y:y};
+            var chip=document.querySelector("#tutMembersTray .member-chip[data-idx='"+tutTrayDragging+"']");
+            if(chip) chip.classList.add("placed");
+            tutDraw();
+            // check if all placed
+            var allPlaced=true; for(var i=0;i<TUT_N;i++) if(!tutPlacedNodes[i]){ allPlaced=false; break; }
+            if(allPlaced && tutStep===0) setTimeout(function(){ advanceTutStep(1); },300);
+        }
+        tutTrayDragging=null;
+    }
+
+    // tutorial canvas drag end
+    if(tutDraggingCanvas!==null){
+        if(!tutDragMoved) handleTutNodeClick(tutDraggingCanvas);
+        else {
+            // moved a node → advance step 3→4
+            if(tutStep===3) setTimeout(function(){ advanceTutStep(4); },400);
+        }
+        tutDraggingCanvas=null; tutDragMoved=false;
+    }
+
+    // formal tray drop
+    if(trayDragging!==null){
+        ghost.style.display="none";
+        document.getElementById("canvasWrapper").classList.remove("drag-over");
+        var mainCanvas=document.getElementById("mainCanvas");
+        var r=mainCanvas.getBoundingClientRect(), x=p.clientX-r.left, y=p.clientY-r.top;
+        if(x>=ICON_R&&x<=formalCW-ICON_R&&y>=ICON_R&&y<=formalCH-ICON_R){
+            placedNodes[trayDragging]={x:x,y:y};
+            var chip=document.querySelector("#membersTray .member-chip[data-idx='"+trayDragging+"']");
+            if(chip) chip.classList.add("placed");
+            formalUpdateCounters(); formalDraw();
+        }
+        trayDragging=null;
+    }
+
+    // formal canvas drag end
+    if(draggingCanvas!==null){
+        if(!dragMoved) handleFormalNodeClick(draggingCanvas);
+        draggingCanvas=null; dragMoved=false;
+    }
+}
+
+// ══════════════════════════════════════════════════
+// FORMAL TASK
+// ══════════════════════════════════════════════════
+var formalCtx, formalCW, formalCH;
+
+function startFormalTask(tIdx){
+    taskStartMs[tIdx]=Date.now();
+    N=taskOrder[tIdx]; REQUIRED_EDGES=REQ_MAP[N];
+    placedNodes=[]; edges={}; edgeCount=0; selectedNode=null;
+    for(var i=0;i<N;i++) placedNodes.push(null);
+
+    document.getElementById("topBarTaskLabel").textContent="第"+(tIdx+1)+"个任务（N="+N+"）";
+    document.getElementById("memberCount").textContent=N;
+    document.getElementById("edgeCount_req").textContent=REQUIRED_EDGES;
+    document.getElementById("placedCounter").textContent="已放置：0 / "+N+" 人";
+    document.getElementById("edgeCounter").textContent="当前连线：0 / "+REQUIRED_EDGES;
+
+    var finishBtn=document.getElementById("finishBtn");
+    finishBtn.textContent="完成本次任务"; finishBtn.disabled=true; finishBtn.className="";
+
+    var mainCanvas=document.getElementById("mainCanvas");
+    if(!formalCtx){
+        formalCtx=mainCanvas.getContext("2d");
+        formalCtx.scale(DPR,DPR);
+        formalCW=mainCanvas.width/DPR;
+        formalCH=mainCanvas.height/DPR;
+        mainCanvas.addEventListener("mousedown",onFormalCanvasDown);
+        mainCanvas.addEventListener("touchstart",onFormalCanvasDown,{passive:false});
+    }
+
+    document.getElementById("taskContainer").style.display="block";
+    buildFormalTray(); formalDraw();
+}
+
+function buildFormalTray(){
+    var tray=document.getElementById("membersTray");
+    var existing=tray.querySelectorAll(".member-chip");
+    for(var i=0;i<existing.length;i++) tray.removeChild(existing[i]);
+    var hint=tray.querySelector(".tray-hint");
+    for(var i=0;i<N;i++){
+        var isMe=(i===meIndex), chip=document.createElement("div");
+        chip.className="member-chip"; chip.dataset.idx=i;
+        chip.appendChild(makeSVGIcon(isMe,52));
+        var lbl=document.createElement("div"); lbl.className="chip-label"; lbl.textContent=isMe?"我":String(i);
+        chip.appendChild(lbl);
+        chip.addEventListener("mousedown",onFormalTrayDown);
+        chip.addEventListener("touchstart",onFormalTrayDown,{passive:false});
+        tray.insertBefore(chip,hint);
+    }
+}
+
+function onFormalTrayDown(e){
+    var idx=parseInt(this.dataset.idx);
+    if(placedNodes[idx]) return;
+    var p=getPointer(e);
+    trayDragging=idx;
+    var ghost=document.getElementById("dragGhost");
+    ghost.innerHTML=""; ghost.appendChild(makeSVGIcon(idx===meIndex,56));
+    ghost.style.display="block"; ghost.style.left=p.clientX+"px"; ghost.style.top=p.clientY+"px";
+    e.preventDefault();
+}
+
+function onFormalCanvasDown(e){
+    var p=getPointer(e);
+    var mainCanvas=document.getElementById("mainCanvas");
+    var r=mainCanvas.getBoundingClientRect();
+    var x=p.clientX-r.left, y=p.clientY-r.top;
+    var hit=getFormalNodeAt(x,y);
+    if(hit!==null){ draggingCanvas=hit; dragMoved=false; e.preventDefault(); }
+}
+
+function getFormalNodeAt(x,y){
+    for(var i=N-1;i>=0;i--){
+        if(!placedNodes[i]) continue;
+        var dx=x-placedNodes[i].x, dy=y-placedNodes[i].y;
+        if(Math.sqrt(dx*dx+dy*dy)<ICON_R+4) return i;
+    } return null;
+}
+
+function handleFormalNodeClick(i){
+    if(selectedNode===null){ selectedNode=i; formalDraw(); }
+    else if(selectedNode===i){ selectedNode=null; formalDraw(); }
+    else { formalToggleEdge(selectedNode,i); selectedNode=null; }
+}
+
+function formalToggleEdge(a,b){
+    var key=a<b?(a+"-"+b):(b+"-"+a);
+    if(edges[key]){delete edges[key];edgeCount--;} else{edges[key]=true;edgeCount++;}
+    formalUpdateCounters(); formalDraw();
+}
+
+function formalUpdateCounters(){
+    var pc=0; for(var i=0;i<N;i++) if(placedNodes[i]) pc++;
+    document.getElementById("placedCounter").textContent="已放置："+pc+" / "+N+" 人";
+    document.getElementById("edgeCounter").textContent="当前连线："+edgeCount+" / "+REQUIRED_EDGES;
+    document.getElementById("edgeCounter").classList.toggle("complete",edgeCount===REQUIRED_EDGES);
+    var ready=(pc===N&&edgeCount===REQUIRED_EDGES);
+    var finishBtn=document.getElementById("finishBtn");
+    finishBtn.disabled=!ready; finishBtn.classList.toggle("ready",ready);
+}
+
+function formalDraw(){
+    formalCtx.clearRect(0,0,formalCW,formalCH);
+    var placed=0; for(var i=0;i<N;i++) if(placedNodes[i]) placed++;
+    document.getElementById("dropHint").style.opacity=placed===0?"1":"0";
+    formalCtx.strokeStyle="#555"; formalCtx.lineWidth=1.8;
+    for(var key in edges){
+        var pts=key.split("-"), a=parseInt(pts[0]), b=parseInt(pts[1]);
+        if(!placedNodes[a]||!placedNodes[b]) continue;
+        formalCtx.beginPath(); formalCtx.moveTo(placedNodes[a].x,placedNodes[a].y);
+        formalCtx.lineTo(placedNodes[b].x,placedNodes[b].y); formalCtx.stroke();
+    }
+    for(var i=0;i<N;i++){
+        if(!placedNodes[i]) continue;
+        var n=placedNodes[i]; drawIcon(formalCtx,n.x,n.y,i===meIndex,i===selectedNode);
+        formalCtx.fillStyle="#222"; formalCtx.font="bold 11px 'Microsoft YaHei',Arial";
+        formalCtx.textAlign="center"; formalCtx.fillText(i===meIndex?"我":String(i),n.x,n.y+ICON_R+12);
+    }
+}
+
+// Finish task button
+document.getElementById("finishBtn").addEventListener("click", function(){
+    if(this.disabled) return;
+    var tIdx=currentTask;
+    taskEndMs[tIdx]=Date.now();
+    var mainCanvas=document.getElementById("mainCanvas");
+
+    // build graph snapshot
+    var graph={
+        nodes: placedNodes.map(function(nd,i){ return nd?{id:i,x:Math.round(nd.x),y:Math.round(nd.y)}:null; }).filter(Boolean),
+        edges: Object.keys(edges)
+    };
+
+    // compute network metrics
+    var metrics=computeMetrics(placedNodes, edges, edgeCount, N, meIndex);
+
+    // render PNG blob
+    var pngBlob=renderNetworkPNG(mainCanvas, tIdx, taskOrder[tIdx]);
+
+    savedResults[tIdx]={graph:graph, metrics:metrics, pngBlob:pngBlob, nodeN:taskOrder[tIdx]};
+
+    document.getElementById("taskContainer").style.display="none";
+    if(tIdx<2){
+        document.getElementById("transTaskNum").textContent=tIdx+1;
+        document.getElementById("transNextNum").textContent=tIdx+2;
+        document.getElementById("pageTransition").style.display="block";
+    } else {
+        // After 3rd draw task → go to ego degree section
+        document.getElementById("pageEDIntro").style.display="block";
+    }
+});
+
+document.getElementById("transNextBtn").addEventListener("click", function(){
+    document.getElementById("pageTransition").style.display="none";
+    currentTask++; startFormalTask(currentTask);
+});
+
+// ══════════════════════════════════════════════════
+// NETWORK METRICS
+// ══════════════════════════════════════════════════
+function computeMetrics(placedNodes, edges, edgeCount, N, meIndex){
+    var deg=[]; for(var i=0;i<N;i++) deg.push(0);
+    for(var key in edges){
+        var pts=key.split("-"); deg[parseInt(pts[0])]++; deg[parseInt(pts[1])]++;
+    }
+    var degreeMe=deg[meIndex], normDeg=degreeMe/(N-1);
+    var sum=0; for(var i=0;i<N;i++) sum+=deg[i];
+    var meanDeg=sum/N, relDeg=degreeMe-meanDeg;
+    var maxEdges=N*(N-1)/2, density=edgeCount/maxEdges;
+    var maxDeg=0; for(var i=0;i<N;i++) if(deg[i]>maxDeg) maxDeg=deg[i];
+    var sumDiff=0; for(var i=0;i<N;i++) sumDiff+=(maxDeg-deg[i]);
+    var centralization=N>2?sumDiff/((N-1)*(N-2)):0;
+    var sorted=[]; for(var i=0;i<N;i++) sorted.push({id:i,deg:deg[i]});
+    sorted.sort(function(a,b){return b.deg-a.deg;});
+    var cN=Math.round(N*0.3), pN=Math.round(N*0.3);
+    var coreIds=[],periIds=[],semiIds=[];
+    for(var i=0;i<cN;i++) coreIds.push(sorted[i].id);
+    for(var i=N-pN;i<N;i++) periIds.push(sorted[i].id);
+    for(var i=cN;i<N-pN;i++) semiIds.push(sorted[i].id);
+    function pairD(gA,gB,same){
+        if(!gA.length||!gB.length) return 0;
+        var cnt=0,pos=0;
+        if(same){ pos=gA.length*(gA.length-1)/2; for(var i=0;i<gA.length;i++) for(var j=i+1;j<gA.length;j++){var k=gA[i]<gA[j]?gA[i]+"-"+gA[j]:gA[j]+"-"+gA[i];if(edges[k])cnt++;} }
+        else{ pos=gA.length*gB.length; for(var i=0;i<gA.length;i++) for(var j=0;j<gB.length;j++){var k=gA[i]<gB[j]?gA[i]+"-"+gB[j]:gB[j]+"-"+gA[i];if(edges[k])cnt++;} }
+        return pos===0?0:cnt/pos;
+    }
+    var egoPos=coreIds.indexOf(meIndex)>=0?"核心":periIds.indexOf(meIndex)>=0?"边缘":"半边缘";
+    return{
+        degreeMe:degreeMe, normalizedDegree:normDeg, relativeDegree:relDeg,
+        density:density, networkCentralization:centralization, egoPosition:egoPos,
+        coreDensity:pairD(coreIds,coreIds,true), coreSemiDensity:pairD(coreIds,semiIds,false),
+        corePeriDensity:pairD(coreIds,periIds,false), periDensity:pairD(periIds,periIds,true)
+    };
+}
+
+// ══════════════════════════════════════════════════
+// RENDER NETWORK PNG
+// ══════════════════════════════════════════════════
+function renderNetworkPNG(srcCanvas, tIdx, nodeN){
+    var DPR=4, IR=26, HR=8, BW=11, BH=12, CW=650, CH=440, pad=20, footH=36;
+    var oc=document.createElement("canvas");
+    oc.width=(CW+pad*2)*DPR; oc.height=(CH+pad*2+footH)*DPR;
+    var ox=oc.getContext("2d"); ox.scale(DPR,DPR);
+    ox.fillStyle="#fff"; ox.fillRect(0,0,CW+pad*2,CH+pad*2+footH);
+    ox.drawImage(srcCanvas, 0,0, srcCanvas.width,srcCanvas.height, pad,pad, CW,CH);
+    var fy=CH+pad+4;
+    ox.strokeStyle="#ccc"; ox.lineWidth=1; ox.beginPath(); ox.moveTo(pad,fy); ox.lineTo(CW+pad,fy); ox.stroke();
+    var ts=new Date().toLocaleString("zh-CN");
+    ox.fillStyle="#666"; ox.font="13px 'Microsoft YaHei',Arial"; ox.textAlign="left";
+    ox.fillText("T"+(tIdx+1)+" / N"+nodeN+"  |  "+participantClass+" 学号"+participantName+"  |  "+ts, pad, fy+20);
+    ox.textAlign="right";
+    var REQ_MAP={6:8,8:10,10:12};
+    ox.fillText("连线数: "+REQ_MAP[nodeN]+"  节点数: "+nodeN, CW+pad, fy+20);
+    return new Promise(function(resolve){
+        oc.toBlob(function(blob){ resolve(blob); }, "image/png");
+    });
+}
+
+// ══════════════════════════════════════════════════
+// EGO DEGREE BINARY SEARCH ENGINE
+// ══════════════════════════════════════════════════
+
+var MAX_DC = 3;   // max contradictions allowed before ending
+var isMaster = false;  // mastercode flag
+
+// ED task order: same 6 rotations as draw tasks (by orderNum)
+var ED_ORDER_SETS = {1:[6,8,10],2:[6,10,8],3:[8,6,10],4:[8,10,6],5:[10,6,8],6:[10,8,6]};
+var edOrder = [6,8,10];   // will be set when ED starts
+var edPhase = 0;          // 0,1,2 → which N we're on
+var edResults = {};       // {6:{finalK,concluded,history}, 8:…, 10:…}
+var edS = null;           // current per-N state object
+
+function edInitState(N) {
+    return { N:N, lo:1, hi:N-1, currentK:null, lastLoser:null,
+             phase:'approx', dcCount:0, roundNum:0,
+             selectedOpt:null, history:[], approxPair:null, dcPair:null };
+}
+
+var ED_GRAPHS = {
+  6: {
+    1: {nodes:[{"id":0,"x":26,"y":26},{"id":1,"x":83,"y":174},{"id":2,"x":168,"y":169},{"id":3,"x":104,"y":84},{"id":4,"x":180,"y":70},{"id":5,"x":207,"y":115}], edges:["0-3","3-5","4-5","2-4","1-2","1-3","2-5","3-4"]},
+    2: {nodes:[{"id":0,"x":73,"y":174},{"id":1,"x":137,"y":116},{"id":2,"x":91,"y":59},{"id":3,"x":26,"y":111},{"id":4,"x":171,"y":52},{"id":5,"x":226,"y":73}], edges:["0-1","1-2","2-4","4-5","0-3","2-3","1-5","1-4"]},
+    3: {nodes:[{"id":0,"x":137,"y":89},{"id":1,"x":142,"y":174},{"id":2,"x":202,"y":106},{"id":3,"x":150,"y":26},{"id":4,"x":53,"y":26},{"id":5,"x":63,"y":120}], edges:["3-4","2-3","1-2","1-5","4-5","0-3","0-2","0-5"]},
+    4: {nodes:[{"id":0,"x":102,"y":61},{"id":1,"x":70,"y":113},{"id":2,"x":45,"y":50},{"id":3,"x":17,"y":104},{"id":4,"x":92,"y":17},{"id":5,"x":143,"y":18}], edges:["0-5","4-5","2-4","2-3","1-3","0-1","0-2","0-4"]},
+    5: {nodes:[{"id":0,"x":80,"y":74},{"id":1,"x":137,"y":58},{"id":2,"x":135,"y":106},{"id":3,"x":25,"y":112},{"id":4,"x":109,"y":17},{"id":5,"x":17,"y":67}], edges:["0-3","0-5","0-4","0-1","0-2","3-5","1-4","1-2"]},
+  },
+  8: {
+    1: {nodes:[{"id":0,"x":44,"y":64},{"id":1,"x":111,"y":35},{"id":2,"x":214,"y":98},{"id":3,"x":117,"y":174},{"id":4,"x":133,"y":112},{"id":5,"x":58,"y":174},{"id":6,"x":186,"y":41},{"id":7,"x":189,"y":166}], edges:["0-1","1-6","2-6","2-7","3-7","3-5","4-5","2-4","1-4","4-7"]},
+    2: {nodes:[{"id":0,"x":214,"y":26},{"id":1,"x":214,"y":105},{"id":2,"x":214,"y":174},{"id":3,"x":41,"y":103},{"id":4,"x":128,"y":109},{"id":5,"x":60,"y":171},{"id":6,"x":49,"y":34},{"id":7,"x":129,"y":38}], edges:["0-1","1-2","6-7","0-7","3-6","1-4","2-4","4-5","3-5","4-7"]},
+    3: {nodes:[{"id":0,"x":70,"y":134},{"id":1,"x":98,"y":73},{"id":2,"x":206,"y":49},{"id":3,"x":209,"y":129},{"id":4,"x":134,"y":116},{"id":5,"x":23,"y":102},{"id":6,"x":26,"y":174},{"id":7,"x":125,"y":173}], edges:["0-5","0-7","5-6","6-7","4-7","3-4","1-2","1-4","0-1","2-4"]},
+    4: {nodes:[{"id":0,"x":118,"y":56},{"id":1,"x":101,"y":17},{"id":2,"x":17,"y":17},{"id":3,"x":80,"y":113},{"id":4,"x":32,"y":101},{"id":5,"x":58,"y":48},{"id":6,"x":143,"y":17},{"id":7,"x":132,"y":113}], edges:["3-4","4-5","2-5","1-5","0-6","1-6","0-1","0-7","0-5","3-7"]},
+    5: {nodes:[{"id":0,"x":97,"y":72},{"id":1,"x":102,"y":28},{"id":2,"x":53,"y":57},{"id":3,"x":146,"y":55},{"id":4,"x":17,"y":17},{"id":5,"x":127,"y":106},{"id":6,"x":66,"y":107},{"id":7,"x":57,"y":17}], edges:["0-1","1-2","0-3","0-2","0-5","0-6","1-7","5-6","2-4","3-5"]},
+    6: {nodes:[{"id":0,"x":112,"y":92},{"id":1,"x":26,"y":94},{"id":2,"x":205,"y":94},{"id":3,"x":141,"y":174},{"id":4,"x":182,"y":27},{"id":5,"x":214,"y":174},{"id":6,"x":48,"y":26},{"id":7,"x":76,"y":174}], edges:["0-7","0-2","3-5","0-3","0-1","2-4","0-6","2-5","0-4","3-7"]},
+    7: {nodes:[{"id":0,"x":116,"y":100},{"id":1,"x":49,"y":174},{"id":2,"x":26,"y":100},{"id":3,"x":164,"y":26},{"id":4,"x":204,"y":69},{"id":5,"x":204,"y":132},{"id":6,"x":164,"y":174},{"id":7,"x":49,"y":26}], edges:["0-7","0-1","0-2","0-3","0-4","0-5","0-6","5-6","4-5","3-4"]},
+  },
+  10: {
+    1: {nodes:[{"id":0,"x":26,"y":98},{"id":1,"x":72,"y":50},{"id":2,"x":125,"y":102},{"id":3,"x":214,"y":174},{"id":4,"x":134,"y":26},{"id":5,"x":190,"y":53},{"id":6,"x":71,"y":157},{"id":7,"x":214,"y":111},{"id":8,"x":26,"y":26},{"id":9,"x":155,"y":166}], edges:["0-1","1-8","1-2","1-4","2-9","2-5","4-5","2-4","3-7","2-6","3-9","5-7"]},
+    2: {nodes:[{"id":0,"x":214,"y":47},{"id":1,"x":201,"y":119},{"id":2,"x":159,"y":171},{"id":3,"x":168,"y":26},{"id":4,"x":118,"y":107},{"id":5,"x":26,"y":174},{"id":6,"x":89,"y":174},{"id":7,"x":97,"y":26},{"id":8,"x":27,"y":122},{"id":9,"x":26,"y":26}], edges:["0-1","1-2","2-6","0-3","1-4","2-4","5-6","3-7","5-8","4-7","4-8","7-9"]},
+    3: {nodes:[{"id":0,"x":113,"y":29},{"id":1,"x":137,"y":66},{"id":2,"x":143,"y":113},{"id":3,"x":112,"y":113},{"id":4,"x":71,"y":113},{"id":5,"x":82,"y":69},{"id":6,"x":17,"y":65},{"id":7,"x":17,"y":17},{"id":8,"x":67,"y":17},{"id":9,"x":37,"y":17}], edges:["0-1","1-2","2-3","3-4","4-5","5-6","6-7","7-8","8-9","0-5","0-8","1-5"]},
+    4: {nodes:[{"id":0,"x":93,"y":67},{"id":1,"x":143,"y":43},{"id":2,"x":148,"y":107},{"id":3,"x":125,"y":85},{"id":4,"x":110,"y":113},{"id":5,"x":66,"y":113},{"id":6,"x":17,"y":113},{"id":7,"x":37,"y":73},{"id":8,"x":25,"y":41},{"id":9,"x":39,"y":20}], edges:["0-1","0-3","0-5","0-7","1-2","3-4","5-6","7-8","2-3","4-5","6-7","8-9"]},
+    5: {nodes:[{"id":0,"x":101,"y":54},{"id":1,"x":61,"y":74},{"id":2,"x":114,"y":92},{"id":3,"x":71,"y":113},{"id":4,"x":137,"y":113},{"id":5,"x":148,"y":60},{"id":6,"x":58,"y":17},{"id":7,"x":22,"y":98},{"id":8,"x":18,"y":22},{"id":9,"x":143,"y":17}], edges:["0-1","1-3","0-2","3-4","1-2","0-5","2-4","4-5","0-6","3-7","6-8","0-9"]},
+    6: {nodes:[{"id":0,"x":151,"y":110},{"id":1,"x":96,"y":174},{"id":2,"x":214,"y":58},{"id":3,"x":169,"y":32},{"id":4,"x":97,"y":87},{"id":5,"x":214,"y":174},{"id":6,"x":176,"y":174},{"id":7,"x":94,"y":26},{"id":8,"x":38,"y":61},{"id":9,"x":47,"y":23}], edges:["0-1","0-2","0-3","0-4","0-5","0-6","4-7","7-8","7-9","3-7","2-3","5-6"]},
+    7: {nodes:[{"id":0,"x":96,"y":111},{"id":1,"x":156,"y":174},{"id":2,"x":169,"y":62},{"id":3,"x":65,"y":174},{"id":4,"x":190,"y":115},{"id":5,"x":26,"y":85},{"id":6,"x":41,"y":26},{"id":7,"x":214,"y":174},{"id":8,"x":142,"y":26},{"id":9,"x":26,"y":174}], edges:["0-5","0-6","0-1","4-7","1-7","2-8","2-4","3-9","0-9","0-3","0-4","0-2"]},
+    8: {nodes:[{"id":0,"x":108,"y":97},{"id":1,"x":83,"y":26},{"id":2,"x":131,"y":26},{"id":3,"x":214,"y":174},{"id":4,"x":55,"y":174},{"id":5,"x":197,"y":60},{"id":6,"x":26,"y":122},{"id":7,"x":26,"y":42},{"id":8,"x":200,"y":114},{"id":9,"x":153,"y":174}], edges:["0-1","0-5","0-2","0-8","3-8","3-9","0-9","0-7","0-4","0-6","1-2","5-8"]},
+    9: {nodes:[{"id":0,"x":118,"y":101},{"id":1,"x":68,"y":174},{"id":2,"x":150,"y":26},{"id":3,"x":190,"y":174},{"id":4,"x":195,"y":44},{"id":5,"x":26,"y":134},{"id":6,"x":26,"y":63},{"id":7,"x":72,"y":26},{"id":8,"x":145,"y":174},{"id":9,"x":214,"y":90}], edges:["0-3","0-9","0-8","0-4","0-2","0-5","0-1","0-6","2-4","0-7","3-8","4-9"]},
+  },
+};
+
+// ── SVG network diagram (real coordinates from Excel) ──
+function makeEDNetSVG(totalNodes, egoDegree) {
+    var g = ED_GRAPHS[totalNodes] && ED_GRAPHS[totalNodes][egoDegree];
+    if (!g) return '<svg viewBox="0 0 260 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:200px;"><text x="130" y="100" text-anchor="middle" font-size="13" fill="#aaa">暂无图形</text></svg>';
+
+    var W=260, H=200, PAD=18;
+    var xs=g.nodes.map(function(n){return n.x;}), ys=g.nodes.map(function(n){return n.y;});
+    var minX=Math.min.apply(null,xs), maxX=Math.max.apply(null,xs);
+    var minY=Math.min.apply(null,ys), maxY=Math.max.apply(null,ys);
+    var rangeX=maxX-minX||1, rangeY=maxY-minY||1;
+    var scale=Math.min((W-PAD*2)/rangeX, (H-PAD*2)/rangeY);
+    var offX=(W-rangeX*scale)/2 - minX*scale;
+    var offY=(H-rangeY*scale)/2 - minY*scale;
+
+    function px(n){ return offX+n.x*scale; }
+    function py(n){ return offY+n.y*scale; }
+
+    var nodeMap={};
+    g.nodes.forEach(function(n){ nodeMap[n.id]=n; });
+
+    var s='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:200px;pointer-events:none;">';
+
+    // edges — uniform color and weight
+    g.edges.forEach(function(e){
+        var parts=e.split('-'), a=nodeMap[parseInt(parts[0])], b=nodeMap[parseInt(parts[1])];
+        s+='<line x1="'+px(a)+'" y1="'+py(a)+'" x2="'+px(b)+'" y2="'+py(b)+'" stroke="#7aaac8" stroke-width="1.6" opacity="0.9"/>';
+    });
+
+    // alter nodes (same colors as draw task: fill=#9ab8d8 stroke=#6090b0)
+    g.nodes.forEach(function(n){
+        if(n.id===0) return;
+        s+='<circle cx="'+px(n)+'" cy="'+py(n)+'" r="8" fill="#9ab8d8" stroke="#6090b0" stroke-width="1.5"/>';
+    });
+
+    // ego node (id=0, same as draw task: fill=#4a90d9 stroke=#2a6aaa)
+    var ego=nodeMap[0];
+    s+='<circle cx="'+px(ego)+'" cy="'+py(ego)+'" r="11" fill="#4a90d9" stroke="#2a6aaa" stroke-width="2"/>';
+    s+='<text x="'+px(ego)+'" y="'+(py(ego)+4)+'" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff" font-family="Microsoft YaHei,Arial">我</text>';
+    s+='</svg>';
+    return s;
+}
+
+// ── render one AB round ──
+function edRenderRound() {
+    var s = edS;
+    s.selectedOpt = null;
+    document.getElementById('cardA').style.borderColor = '#ccc';
+    document.getElementById('cardA').style.background  = '#fff';
+    document.getElementById('cardB').style.borderColor = '#ccc';
+    document.getElementById('cardB').style.background  = '#fff';
+    document.getElementById('btnEDConfirm').disabled = true;
+    document.getElementById('edHint').textContent = '请先点击左边或右边的图';
+
+    // top label
+    document.getElementById('edTopLabel').textContent = 'N='+s.N+'  第'+(s.roundNum+1)+'题';
+
+    // question + subtext
+    document.getElementById('edQuestion').textContent = '请根据你在学校里实际的人际交往情况，选择哪张图更像你。';
+    document.getElementById('edSubtext').textContent  = '（图中共 '+s.N+' 人）';
+
+    // DC warning
+    document.getElementById('dcWarnBar').style.display = 'none';
+
+    // get pair
+    var pair;
+    if (s.phase === 'approx') {
+        if (s.lo === s.hi) { s.currentK = s.lo; s.phase = 'doublecheck'; }
+        if (s.phase === 'doublecheck') { pair = edGetDCPair(s); s.dcPair = pair; }
+        else { pair = {dA: Math.floor((s.lo+s.hi)/2), dB: Math.floor((s.lo+s.hi)/2)+1}; s.approxPair = pair; }
+    } else {
+        pair = edGetDCPair(s);
+        s.dcPair = pair;
+    }
+
+    document.getElementById('netA').innerHTML = makeEDNetSVG(s.N, pair.dA);
+    document.getElementById('netB').innerHTML = makeEDNetSVG(s.N, pair.dB);
+    document.getElementById('descA').textContent = '';
+    document.getElementById('descB').textContent = '';
+
+    edUpdateDots();
+
+    // show trial page, hide intro
+    document.getElementById('pageEDIntro').style.display = 'none';
+    document.getElementById('pageEDTrial').style.display = 'block';
+    window.scrollTo(0,0);
+}
+
+function edGetDCPair(s) {
+    var k = s.currentK, loser = s.lastLoser;
+    if (k <= 1)       return {dA:k, dB:k+1};
+    if (k >= s.N - 1) return {dA:k-1, dB:k};
+    if (loser > k)    return {dA:k-1, dB:k};
+    return {dA:k, dB:k+1};
+}
+
+function edUpdateDots() {
+    var s = edS;
+    var approxRounds = Math.ceil(Math.log2(s.N - 1));
+    var total = approxRounds + MAX_DC + 1;
+    var container = document.getElementById('edStepDots');
+    var html = '';
+    for (var i = 0; i < total; i++) {
+        var cls = 'step-dot';
+        if (i < s.roundNum) cls += ' done';
+        else if (i === s.roundNum) cls += ' active';
+        html += '<div class="'+cls+'"></div>';
+    }
+    container.innerHTML = html;
+}
+
+function edSelect(opt) {
+    edS.selectedOpt = opt;
+    var selStyle  = {border:'2px solid #6a3acd', bg:'#f3f0ff'};
+    var idleStyle = {border:'2px solid #ccc',    bg:'#fff'};
+    var pick = opt === 'A' ? selStyle : idleStyle;
+    var other= opt === 'B' ? selStyle : idleStyle;
+    document.getElementById('cardA').style.borderColor = (opt==='A' ? '#6a3acd' : '#ccc');
+    document.getElementById('cardA').style.background  = (opt==='A' ? '#f3f0ff' : '#fff');
+    document.getElementById('cardB').style.borderColor = (opt==='B' ? '#6a3acd' : '#ccc');
+    document.getElementById('cardB').style.background  = (opt==='B' ? '#f3f0ff' : '#fff');
+    document.getElementById('btnEDConfirm').disabled = false;
+    document.getElementById('edHint').textContent = '已选择 '+opt+'，点击确认';
+}
+
+function edConfirm() {
+    var s = edS, choice = s.selectedOpt;
+    if (!choice) return;
+
+    if (s.phase === 'approx') {
+        var pair = s.approxPair;
+        var pickedD = (choice==='A') ? pair.dA : pair.dB;
+        s.history.push({phase:'approx', round:s.roundNum, dA:pair.dA, dB:pair.dB, choice:choice, picked:pickedD});
+        if (choice==='A') { s.hi=pair.dA; s.lastLoser=pair.dB; }
+        else              { s.lo=pair.dB; s.lastLoser=pair.dA; }
+        s.roundNum++;
+        if (s.lo === s.hi) { s.currentK=s.lo; s.phase='doublecheck'; }
+        edRenderRound();
+
+    } else {
+        var pair = s.dcPair, k = s.currentK;
+        var pickedD = (choice==='A') ? pair.dA : pair.dB;
+        var consistent = (pickedD === k);
+        s.history.push({phase:'dc', dcCount:s.dcCount, k:k, dA:pair.dA, dB:pair.dB, choice:choice, picked:pickedD, consistent:consistent});
+
+        if (consistent) {
+            edConclude(k, true);
+        } else {
+            s.dcCount++;
+            if (s.dcCount > MAX_DC) { edConclude(null, false); return; }
+            if (pickedD > k) { s.lo=pickedD; s.hi=s.N-1; }
+            else             { s.lo=1; s.hi=pickedD; }
+            s.lastLoser = k;
+            s.phase = 'approx';
+            s.currentK = null;
+            s.roundNum++;
+            if (s.lo === s.hi) { s.currentK=s.lo; s.phase='doublecheck'; }
+            edRenderRound();
+        }
+    }
+}
+
+function edConclude(k, concluded) {
+    edResults[edS.N] = {N:edS.N, finalK:k, concluded:concluded, history:edS.history.slice()};
+    edPhase++;
+    if (edPhase < edOrder.length) {
+        // Show transition page before next N
+        document.getElementById('pageEDTrial').style.display = 'none';
+        document.getElementById('pageEDTransition').style.display = 'block';
+        document.getElementById('edTransNum').textContent = edPhase;
+        document.getElementById('edTransNextNum').textContent = edPhase + 1;
+        window.scrollTo(0,0);
+    } else {
+        // All 3 ED rounds done → show pageAllDone and upload
+        document.getElementById('pageEDTrial').style.display = 'none';
+        document.getElementById('pageAllDone').style.display = 'block';
+        autoUploadAndFinish();
+    }
+}
+
+// ── Start button ──
+document.getElementById('btnEDStart').addEventListener('click', function(){
+    edOrder = ED_ORDER_SETS[orderNum] || [6,8,10];
+    edPhase = 0;
+    edResults = {};
+    edS = edInitState(edOrder[edPhase]);
+    edRenderRound();
+});
+
+// ── Card click bindings (inside IIFE so edSelect is in scope) ──
+document.getElementById('cardA').addEventListener('click', function(){ edSelect('A'); });
+document.getElementById('cardB').addEventListener('click', function(){ edSelect('B'); });
+document.getElementById('btnEDConfirm').addEventListener('click', function(){ edConfirm(); });
+document.getElementById('masterSkipBtn').addEventListener('click', function(){ runMasterSkip(); });
+document.getElementById('edTransNextBtn').addEventListener('click', function(){
+    document.getElementById('pageEDTransition').style.display = 'none';
+    edS = edInitState(edOrder[edPhase]);
+    edRenderRound();
+});
+
+// ══════════════════════════════════════════════════
+// MASTERCODE  班级=888, 学号=88 → skip all tasks
+// ══════════════════════════════════════════════════
+function checkMasterCode(cls, nm) {
+    return cls === '888' && nm === '88';
+}
+
+// Detect which page/state is currently active
+function masterGetCurrentPage() {
+    var pages = ['pageTutorialIntro','pageTutorial','pageTransition',
+                 'pageEDIntro','pageEDTransition','pageEDTrial','pageAllDone'];
+    // task container pages
+    if (document.getElementById('taskContainer').style.display !== 'none') return 'taskContainer';
+    for (var i = 0; i < pages.length; i++) {
+        var el = document.getElementById(pages[i]);
+        if (el && el.style.display !== 'none') return pages[i];
+    }
+    return null;
+}
+
+function masterFillDrawResult(tIdx) {
+    if (!savedResults[tIdx] || !savedResults[tIdx].metrics) {
+        var dummyGraph   = {nodes:[], edges:[]};
+        var dummyMetrics = {degreeMe:0,normalizedDegree:0,relativeDegree:0,
+            density:0,networkCentralization:0,egoPosition:'边缘',
+            coreDensity:0,coreSemiDensity:0,corePeriDensity:0,periDensity:0};
+        savedResults[tIdx] = {graph:dummyGraph, metrics:dummyMetrics, pngBlob:null, nodeN:taskOrder[tIdx]};
+    }
+    if (!taskStartMs[tIdx]) taskStartMs[tIdx] = Date.now();
+    if (!taskEndMs[tIdx])   taskEndMs[tIdx]   = Date.now();
+}
+
+function runMasterSkip() {
+    var cur = masterGetCurrentPage();
+
+    if (cur === 'pageTutorialIntro') {
+        // Skip tutorial intro → skip tutorial canvas → go to task 1
+        if (!tutorialStartMs) tutorialStartMs = Date.now();
+        tutorialEndMs = Date.now();
+        document.getElementById('pageTutorialIntro').style.display = 'none';
+        currentTask = 0;
+        startFormalTask(0);
+
+    } else if (cur === 'pageTutorial') {
+        // Skip tutorial canvas → go to task 1
+        tutorialEndMs = Date.now();
+        document.getElementById('pageTutorial').style.display = 'none';
+        document.getElementById('tutorialOverlay').style.display = 'none';
+        document.getElementById('tutBubble').style.display = 'none';
+        currentTask = 0;
+        startFormalTask(0);
+
+    } else if (cur === 'taskContainer') {
+        // Skip current draw task → fill dummy result → next task or ED intro
+        masterFillDrawResult(currentTask);
+        document.getElementById('taskContainer').style.display = 'none';
+        if (currentTask < 2) {
+            currentTask++;
+            startFormalTask(currentTask);
+        } else {
+            // All 3 draw tasks done → go to ED intro
+            document.getElementById('pageEDIntro').style.display = 'block';
+        }
+
+    } else if (cur === 'pageTransition') {
+        // Skip transition → next draw task
+        document.getElementById('pageTransition').style.display = 'none';
+        currentTask++;
+        startFormalTask(currentTask);
+
+    } else if (cur === 'pageEDIntro') {
+        // Skip ED intro → start ED
+        document.getElementById('pageEDIntro').style.display = 'none';
+        edOrder = ED_ORDER_SETS[orderNum] || [6,8,10];
+        edPhase = 0;
+        edResults = {};
+        edS = edInitState(edOrder[edPhase]);
+        edRenderRound();
+
+    } else if (cur === 'pageEDTransition') {
+        document.getElementById('pageEDTransition').style.display = 'none';
+        edS = edInitState(edOrder[edPhase]);
+        edRenderRound();
+
+    } else if (cur === 'pageEDTrial') {
+        // Skip current ED N → fill dummy result → next N or done
+        if (!edResults[edS.N]) {
+            edResults[edS.N] = {N:edS.N, finalK:null, concluded:false, history:['MASTER_SKIP']};
+        }
+        edPhase++;
+        if (edPhase < edOrder.length) {
+            edS = edInitState(edOrder[edPhase]);
+            edRenderRound();
+        } else {
+            document.getElementById('pageEDTrial').style.display = 'none';
+            document.getElementById('pageAllDone').style.display = 'block';
+            // fill any missing draw results before upload
+            for (var i = 0; i < 3; i++) masterFillDrawResult(i);
+            if (!tutorialStartMs) { tutorialStartMs = Date.now(); tutorialEndMs = Date.now(); }
+            autoUploadAndFinish();
+        }
+    }
+}
+
+// ══════════════════════════════════════════════════
+// AUTO UPLOAD & FINISH  (replaces original)
+// ══════════════════════════════════════════════════
+async function autoUploadAndFinish(){
+    var statusEl=document.getElementById("uploadStatus");
+    var dlBtn=document.getElementById("dlZipBtn");
+    var date=new Date().toISOString().slice(0,10);
+    var NODE_ORDER=[6,8,10];
+    var resultByN={};
+    for(var t=0;t<3;t++) resultByN[taskOrder[t]]={metrics:savedResults[t].metrics, tIndex:t+1};
+
+    // resolve PNG blobs first
+    var pngBlobs=[null,null,null];
+    for(var i=0;i<3;i++){
+        if(savedResults[i].pngBlob instanceof Promise){
+            pngBlobs[i]=await savedResults[i].pngBlob;
+        } else {
+            pngBlobs[i]=savedResults[i].pngBlob;
+        }
+    }
+
+    // build DB row
+    var durSecs=Math.round((Date.now()-startedAtMs)/1000);
+    var durStr=Math.floor(durSecs/60)+"分"+(durSecs%60)+"秒";
+
+    function msToStr(ms){ var s=Math.round(ms/1000); return Math.floor(s/60)+"分"+( s%60)+"秒"; }
+    var tutDur   = tutorialEndMs>0 ? msToStr(tutorialEndMs-tutorialStartMs) : "—";
+    var taskDurs = [0,1,2].map(function(i){ return taskEndMs[i]>0 ? msToStr(taskEndMs[i]-taskStartMs[i]) : "—"; });
+    var totalTaskMs = [0,1,2].reduce(function(s,i){ return s+(taskEndMs[i]-taskStartMs[i]); }, 0);
+    var totalTaskDur = msToStr(totalTaskMs);
+
+    // per-N durations mapped by nodeN
+    var durByN={};
+    for(var t=0;t<3;t++) durByN[taskOrder[t]]=taskDurs[t];
+
+    var row={
+        class_name: participantClass,
+        student_id: participantName,
+        order_num:  orderNum,
+        task_order: "T1=N"+taskOrder[0]+"|T2=N"+taskOrder[1]+"|T3=N"+taskOrder[2],
+        started_at: startedAt,
+        tutorial_duration: tutDur,
+        total_task_duration: totalTaskDur,
+        duration_n6: durByN[6]||"—",
+        duration_n8: durByN[8]||"—",
+        duration_n10: durByN[10]||"—",
+        duration_total: durStr
+    };
+    NODE_ORDER.forEach(function(nn){
+        var res=resultByN[nn], m=res.metrics, s="_n"+nn;
+        row["t_order"+s]=res.tIndex;
+        row["net_ego_degree"+s]=m.degreeMe;
+        row["net_ego_normalized"+s]=parseFloat(m.normalizedDegree.toFixed(4));
+        row["net_ego_relative"+s]=parseFloat(m.relativeDegree.toFixed(4));
+        row["net_ego_position"+s]=m.egoPosition;
+        row["net_global_density"+s]=parseFloat(m.density.toFixed(4));
+        row["net_global_centralization"+s]=parseFloat(m.networkCentralization.toFixed(4));
+        row["net_global_core_density"+s]=parseFloat(m.coreDensity.toFixed(4));
+        row["net_global_core_semi_density"+s]=parseFloat(m.coreSemiDensity.toFixed(4));
+        row["net_global_core_peri_density"+s]=parseFloat(m.corePeriDensity.toFixed(4));
+        row["net_global_peri_density"+s]=parseFloat(m.periDensity.toFixed(4));
+    });
+    row["net_graph_t1"]=JSON.stringify(savedResults[0].graph);
+    row["net_graph_t2"]=JSON.stringify(savedResults[1].graph);
+    row["net_graph_t3"]=JSON.stringify(savedResults[2].graph);
+
+    // ── ego degree results ──
+    row["ed_order"] = edOrder.map(function(n){return 'N'+n;}).join(',');
+    [6,8,10].forEach(function(nn){
+        var r = edResults[nn] || {finalK:null, concluded:false, history:[]};
+        var sfx = '_n'+nn;
+        row['ed_final_k'+sfx]   = (r.finalK!==null&&r.finalK!==undefined) ? r.finalK : null;
+        row['ed_concluded'+sfx] = r.concluded ? 1 : 0;
+        row['ed_history'+sfx]   = (r.history||[]).map(function(h){
+            if(h.phase==='approx') return h.choice+'('+h.dA+'v'+h.dB+'>'+h.picked+')';
+            return 'DC'+h.dcCount+':'+h.choice+'('+h.dA+'v'+h.dB+'>'+h.picked+(h.consistent?'✓':'✗')+')';
+        }).join('|');
+    });
+
+    // upload
+    var result=await dbInsert(row);
+    if(result.error){
+        console.error("Upload failed:", result.error.message);
+        statusEl.innerHTML='<span style="color:#d04020;">⚠ 数据上传失败，正在自动下载ZIP备份，请保存好文件。</span>';
+        dlBtn.style.display="inline-block"; dlBtn.style.background="#e07040"; dlBtn.textContent="⬇ 重新下载ZIP备份";
+        generateZIP(pngBlobs, date);
+    } else {
+        statusEl.innerHTML='<span style="color:#3a9a3a;">✓ 数据已成功上传，感谢参与！</span>';
+        dlBtn.style.display="inline-block"; dlBtn.style.background="#4a90d9"; dlBtn.textContent="下载本地备份（ZIP）";
+    }
+    dlBtn.onclick=function(){ generateZIP(pngBlobs, date); };
+}
+
+// ══════════════════════════════════════════════════
+// BUILD CSV
+// ══════════════════════════════════════════════════
+function buildCSVBytes(date){
+    var NODE_ORDER=[6,8,10];
+    var resultByN={};
+    for(var t=0;t<3;t++) resultByN[taskOrder[t]]={metrics:savedResults[t].metrics, tIndex:t+1};
+
+    function msToStr(ms){ var s=Math.round(ms/1000); return Math.floor(s/60)+"分"+(s%60)+"秒"; }
+    var tutDur=tutorialEndMs>0?msToStr(tutorialEndMs-tutorialStartMs):"—";
+    var taskDurs=[0,1,2].map(function(i){ return taskEndMs[i]>0?msToStr(taskEndMs[i]-taskStartMs[i]):"—"; });
+    var totalTaskMs=[0,1,2].reduce(function(s,i){ return s+(taskEndMs[i]-taskStartMs[i]); },0);
+    var totalTaskDur=msToStr(totalTaskMs);
+    var durByN={}; for(var t=0;t<3;t++) durByN[taskOrder[t]]=taskDurs[t];
+    var durSecs=Math.round((Date.now()-startedAtMs)/1000);
+    var durTotal=Math.floor(durSecs/60)+"分"+(durSecs%60)+"秒";
+
+    var header=["class_name","student_id","date","started_at",
+                "tutorial_duration","total_task_duration",
+                "duration_n6","duration_n8","duration_n10","duration_total",
+                "order_num","task_order"];
+    var NET_COLS=["t_order","net_ego_degree","net_ego_normalized","net_ego_relative","net_ego_position",
+                  "net_global_density","net_global_centralization","net_global_core_density",
+                  "net_global_core_semi_density","net_global_core_peri_density","net_global_peri_density"];
+    NODE_ORDER.forEach(function(nn){ NET_COLS.forEach(function(c){ header.push(c+"_n"+nn); }); });
+    header.push("net_graph_t1","net_graph_t2","net_graph_t3");
+    // ego degree columns
+    header.push("ed_order");
+    [6,8,10].forEach(function(nn){
+        ["ed_final_k","ed_concluded","ed_history"].forEach(function(c){ header.push(c+"_n"+nn); });
+    });
+
+    var row=[participantClass, participantName, date, startedAt,
+             tutDur, totalTaskDur,
+             durByN[6]||"—", durByN[8]||"—", durByN[10]||"—", durTotal,
+             orderNum, "T1=N"+taskOrder[0]+"|T2=N"+taskOrder[1]+"|T3=N"+taskOrder[2]];
+    NODE_ORDER.forEach(function(nn){
+        var res=resultByN[nn], m=res.metrics;
+        row.push(res.tIndex, m.degreeMe,
+            m.normalizedDegree.toFixed(4), m.relativeDegree.toFixed(4), m.egoPosition,
+            m.density.toFixed(4), m.networkCentralization.toFixed(4),
+            m.coreDensity.toFixed(4), m.coreSemiDensity.toFixed(4),
+            m.corePeriDensity.toFixed(4), m.periDensity.toFixed(4));
+    });
+    function csvEsc(s){ s=String(s); return(s.indexOf(",")>=0||s.indexOf('"')>=0||s.indexOf("\n")>=0)?'"'+s.replace(/"/g,'""')+'"':s; }
+    row.push(csvEsc(JSON.stringify(savedResults[0].graph)),
+             csvEsc(JSON.stringify(savedResults[1].graph)),
+             csvEsc(JSON.stringify(savedResults[2].graph)));
+    // ego degree data
+    row.push(csvEsc(edOrder.map(function(n){return 'N'+n;}).join(',')));
+    [6,8,10].forEach(function(nn){
+        var r=edResults[nn]||{finalK:null,concluded:false,history:[]};
+        row.push(r.finalK!==null&&r.finalK!==undefined?r.finalK:'');
+        row.push(r.concluded?1:0);
+        row.push(csvEsc((r.history||[]).map(function(h){
+            if(h.phase==='approx') return h.choice+'('+h.dA+'v'+h.dB+'>'+h.picked+')';
+            return 'DC'+h.dcCount+':'+h.choice+'('+h.dA+'v'+h.dB+'>'+h.picked+(h.consistent?'✓':'✗')+')';
+        }).join('|')));
+    });
+    var csv="\uFEFF"+header.join(",")+"\r\n"+row.map(csvEsc).join(",")+"\r\n";
+    return new TextEncoder().encode(csv);
+}
+
+// ══════════════════════════════════════════════════
+// GENERATE ZIP
+// ══════════════════════════════════════════════════
+function generateZIP(pngBlobs, date){
+    var pending=3, pngBytesArr=[null,null,null];
+    function tryBuild(){
+        pending--;
+        if(pending>0) return;
+        var zip=new MiniZip();
+        for(var i=0;i<3;i++){
+            var fname=participantClass+"_"+participantName+"_order"+orderNum+"_T"+(i+1)+"_N"+taskOrder[i]+"_"+date+".png";
+            zip.addFile(fname, pngBytesArr[i]);
+        }
+        zip.addFile(participantClass+"_"+participantName+"_order"+orderNum+"_数据_"+date+".csv", buildCSVBytes(date));
+        var blob=new Blob([zip.generate()],{type:"application/zip"});
+        var url=URL.createObjectURL(blob), a=document.createElement("a");
+        a.href=url; a.download=participantClass+"_"+participantName+"_order"+orderNum+"_"+date+".zip";
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+    for(var i=0;i<3;i++){
+        (function(idx){
+            var reader=new FileReader();
+            reader.onload=function(){ pngBytesArr[idx]=new Uint8Array(reader.result); tryBuild(); };
+            reader.readAsArrayBuffer(pngBlobs[idx]);
+        })(i);
+    }
+}
+
+// ══════════════════════════════════════════════════
+// MINI ZIP
+// ══════════════════════════════════════════════════
+function MiniZip(){this.files=[];}
+MiniZip.prototype.addFile=function(name,data){this.files.push({name:new TextEncoder().encode(name),data:data});};
+MiniZip.prototype.generate=function(){
+    var local=[],central=[],offset=0;
+    for(var fi=0;fi<this.files.length;fi++){
+        var f=this.files[fi],crc=crc32buf(f.data),sz=f.data.length;
+        var lh=new Uint8Array(30+f.name.length),dv=new DataView(lh.buffer);
+        dv.setUint32(0,0x04034b50,true);dv.setUint16(4,20,true);dv.setUint16(6,0x0800,true);
+        dv.setUint16(8,0,true);dv.setUint16(10,0,true);dv.setUint16(12,0,true);
+        dv.setUint32(14,crc,true);dv.setUint32(18,sz,true);dv.setUint32(22,sz,true);
+        dv.setUint16(26,f.name.length,true);dv.setUint16(28,0,true);lh.set(f.name,30);
+        local.push({lh:lh,data:f.data,nm:f.name,crc:crc,sz:sz,off:offset});
+        offset+=lh.length+sz;
+    }
+    var cdOff=offset,cdParts=[];
+    for(var fi=0;fi<local.length;fi++){
+        var e=local[fi],cd=new Uint8Array(46+e.nm.length),dv=new DataView(cd.buffer);
+        dv.setUint32(0,0x02014b50,true);dv.setUint16(4,20,true);dv.setUint16(6,20,true);
+        dv.setUint16(8,0x0800,true);dv.setUint16(10,0,true);dv.setUint16(12,0,true);
+        dv.setUint16(14,0,true);dv.setUint32(16,e.crc,true);dv.setUint32(20,e.sz,true);
+        dv.setUint32(24,e.sz,true);dv.setUint16(28,e.nm.length,true);dv.setUint16(30,0,true);
+        dv.setUint16(32,0,true);dv.setUint16(34,0,true);dv.setUint16(36,0,true);
+        dv.setUint32(38,0,true);dv.setUint32(42,e.off,true);cd.set(e.nm,46);cdParts.push(cd);
+    }
+    var cdSize=cdParts.reduce(function(s,c){return s+c.length;},0);
+    var eocd=new Uint8Array(22),dv=new DataView(eocd.buffer);
+    dv.setUint32(0,0x06054b50,true);dv.setUint16(4,0,true);dv.setUint16(6,0,true);
+    dv.setUint16(8,this.files.length,true);dv.setUint16(10,this.files.length,true);
+    dv.setUint32(12,cdSize,true);dv.setUint32(16,cdOff,true);dv.setUint16(20,0,true);
+    var parts=[];
+    for(var fi=0;fi<local.length;fi++){parts.push(local[fi].lh);parts.push(local[fi].data);}
+    for(var ci=0;ci<cdParts.length;ci++) parts.push(cdParts[ci]);
+    parts.push(eocd);
+    var total=parts.reduce(function(s,p){return s+p.length;},0);
+    var out=new Uint8Array(total),pos=0;
+    for(var pi=0;pi<parts.length;pi++){out.set(parts[pi],pos);pos+=parts[pi].length;}
+    return out;
+};
+function crc32buf(buf){
+    if(!crc32buf.t){crc32buf.t=new Uint32Array(256);for(var i=0;i<256;i++){var c=i;for(var k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);crc32buf.t[i]=c;}}
+    var crc=0xFFFFFFFF;
+    for(var i=0;i<buf.length;i++) crc=crc32buf.t[(crc^buf[i])&0xFF]^(crc>>>8);
+    return(crc^0xFFFFFFFF)>>>0;
+}
+
+// ══════════════════════════════════════════════════
+// (tutorial canvas events are bound in initTutorial)
+// ══════════════════════════════════════════════════
+
+})();
+</script>
+</body>
+</html>
