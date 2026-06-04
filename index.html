@@ -1844,8 +1844,7 @@ async function autoUploadAndFinish(){
         dlBtn.style.display="inline-block"; dlBtn.style.background="#4a90d9"; dlBtn.textContent="⬇ 下载本地备份（ZIP）";
     }
     // save to outer scope so button always works
-    _zipPngBlobs = pngBlobs; _zipDate = date;
-    dlBtn.onclick = function(){ generateZIP(_zipPngBlobs, _zipDate); };
+    dlBtn.onclick=function(){ generateZIP(pngBlobs, date); };
 }
 
 // ══════════════════════════════════════════════════
@@ -1899,8 +1898,13 @@ function buildCSVBytes(date){
              csvEsc(JSON.stringify(savedResults[2].graph)));
     // ego degree data
     row.push(csvEsc(edOrder.map(function(n){return 'N'+n;}).join(',')));
-    row.push(csvEsc(r2['ed_duration_n6']||'—'), csvEsc(r2['ed_duration_n8']||'—'),
-             csvEsc(r2['ed_duration_n10']||'—'), csvEsc(r2['ed_duration_total']||'—'));
+    function edDurStr(si, ei){ return (edStartMs[si]>0&&edEndMs[ei]>edStartMs[si]) ? msToStr(edEndMs[ei]-edStartMs[si]) : '—'; }
+    var edDurByN = {};
+    for(var ei=0;ei<edOrder.length;ei++) edDurByN[edOrder[ei]] = edDurStr(ei,ei);
+    var edTotalMs2=0;
+    for(var ei=0;ei<edOrder.length;ei++){ if(edStartMs[ei]>0&&edEndMs[ei]>edStartMs[ei]) edTotalMs2+=edEndMs[ei]-edStartMs[ei]; }
+    row.push(csvEsc(edDurByN[6]||'—'), csvEsc(edDurByN[8]||'—'),
+             csvEsc(edDurByN[10]||'—'), csvEsc(edTotalMs2>0?msToStr(edTotalMs2):'—'));
     [6,8,10].forEach(function(nn){
         var r=edResults[nn]||{finalK:null,concluded:false,history:[]};
         row.push(r.finalK!==null&&r.finalK!==undefined?r.finalK:'');
@@ -1924,6 +1928,7 @@ function generateZIP(pngBlobs, date){
         if(pending>0) return;
         var zip=new MiniZip();
         for(var i=0;i<3;i++){
+            if(!pngBytesArr[i]) continue; // skip missing PNG
             var fname=participantClass+"_"+participantName+"_order"+orderNum+"_T"+(i+1)+"_N"+taskOrder[i]+"_"+date+".png";
             zip.addFile(fname, pngBytesArr[i]);
         }
@@ -1935,8 +1940,10 @@ function generateZIP(pngBlobs, date){
     }
     for(var i=0;i<3;i++){
         (function(idx){
+            if(!pngBlobs[idx]){ tryBuild(); return; } // null blob → skip, still count down
             var reader=new FileReader();
             reader.onload=function(){ pngBytesArr[idx]=new Uint8Array(reader.result); tryBuild(); };
+            reader.onerror=function(){ tryBuild(); }; // error → skip, still count down
             reader.readAsArrayBuffer(pngBlobs[idx]);
         })(i);
     }
