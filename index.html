@@ -407,8 +407,12 @@ canvas { display: block; }
   <div class="q-page center-page">
     <h2>第 <span id="edTransNum"></span> 组选择已完成 ✓</h2>
     <p>接下来请继续完成第 <span id="edTransNextNum"></span> 组选择。<br>准备好后，点击下方按钮开始。</p>
-    <p style="font-size:13px;color:#e07020;margin-top:12px;">
-      ⚠️ 接下来描述的群体与前一个任务所涉及的群体<b>无关</b>。
+    <p style="font-size:14px;color:#333;margin-top:16px;line-height:1.8;">
+      请你以"<b>上帝视角</b>"，从旁观者的角度客观审视<b>你在学校里实际的同伴社交圈</b>，选择哪张图更像你。<br>
+      和之前一样，整个社交圈里<b>有人</b>你很熟悉、经常一起玩，<b>有人</b>是朋友的朋友，<b>有人</b>交集不多，但你能清楚看到他们与其他人的互动。整个组织里的同伴关系并非只有一种紧密程度。
+    </p>
+    <p style="font-size:13px;color:#e07020;margin-top:10px;">
+      ⚠️ 本题描述的群体与前面任务（第一部分）所涉及的群体<b>无关</b>。
     </p>
     <div class="q-nav" style="justify-content:center;">
       <button class="q-btn q-btn-next" id="edTransNextBtn">开始下一组 →</button>
@@ -420,14 +424,13 @@ canvas { display: block; }
 <div class="task-container" id="pageEDIntro" style="display:none;">
   <div class="q-page center-page">
     <h2 style="color:#4a90d9;">第二部分：社交圈选择</h2>
-    <p>
-      接下来你会看到一系列社交圈。<br>
-      请根据你在学校里<b>实际的人际交往情况</b>，选择哪张图更像你。<br><br>
-      每道题呈现两张图（<b>A</b> 和 <b>B</b>），图中的圆圈代表人，连线代表朋友关系。<br>
-      蓝色的那个圆圈（标有"<b>我</b>"）代表你。
+    <p style="line-height:1.8;">
+      请你以"<b>上帝视角</b>"，从旁观者的角度客观审视<b>你在学校里实际的同伴社交圈</b>，选择哪张图更像你。<br><br>
+      整个社交圈里<b>有人</b>你很熟悉、经常一起玩，<b>有人</b>是朋友的朋友，<b>有人</b>交集不多，但你能清楚看到他们与其他人的互动。整个组织里的同伴关系并非只有一种紧密程度。<br><br>
+      每道题呈现两张图（<b>A</b> 和 <b>B</b>），图中的圆圈代表人，连线代表朋友关系。蓝色的那个圆圈（标有"<b>我</b>"）代表你。
     </p>
-    <p style="font-size:13px;color:#e07020;margin-top:4px;">
-      ⚠️ 本部分描述的群体与前面任务所涉及的群体<b>无关</b>。
+    <p style="font-size:13px;color:#e07020;margin-top:8px;">
+      ⚠️ 本部分描述的群体与前面任务（第一部分）所涉及的群体<b>无关</b>。
     </p>
     <div class="q-nav" style="justify-content:center;">
       <button class="q-btn q-btn-next" id="btnEDStart">开始 →</button>
@@ -451,7 +454,7 @@ canvas { display: block; }
 
   <div class="task-header">
     <p id="edQuestion" style="font-size:15px;font-weight:bold;color:#222;">请根据你在学校里实际的人际交往情况，选择哪张图更像你。</p>
-    <p id="edSubtext" style="font-size:13px;color:#888;margin-top:4px;"></p>
+    <div id="edSubtext" style="font-size:13px;color:#666;margin-top:6px;line-height:1.75;"></div>
   </div>
 
   <!-- DC warning bar -->
@@ -541,6 +544,7 @@ var DPR=4, ICON_R=26, HEAD_R=8, BODY_W=11, BODY_H=12;
 
 // ── Participant info ──────────────────────────────
 var participantClass="", participantName="";
+var _zipPngBlobs=[null,null,null], _zipDate="";
 var startedAtMs=0, startedAt="";
 var tutorialStartMs=0, tutorialEndMs=0;
 var taskStartMs=[0,0,0], taskEndMs=[0,0,0];
@@ -1358,6 +1362,9 @@ var ED_ORDER_SETS = {1:[6,8,10],2:[6,10,8],3:[8,6,10],4:[8,10,6],5:[10,6,8],6:[1
 var edOrder = [6,8,10];   // will be set when ED starts
 var edPhase = 0;          // 0,1,2 → which N we're on
 var edResults = {};       // {6:{finalK,concluded,history}, 8:…, 10:…}
+var edStartMs = [0,0,0];  // start time for each ED phase (index = edPhase)
+var edEndMs   = [0,0,0];  // end time for each ED phase
+var edSectionStartMs = 0; // when the whole ED section started
 var edS = null;           // current per-N state object
 
 function edInitState(N) {
@@ -1457,8 +1464,10 @@ function edRenderRound() {
     document.getElementById('edTopLabel').textContent = 'N='+s.N+'  第'+(s.roundNum+1)+'题';
 
     // question + subtext
-    document.getElementById('edQuestion').textContent = '请根据你在学校里实际的人际交往情况，选择哪张图更像你。';
-    document.getElementById('edSubtext').textContent  = '（图中共 '+s.N+' 人）　※ 本题描述的群体与前一个任务所涉及的群体无关';
+    document.getElementById('edQuestion').textContent = '请你以"上帝视角"，从旁观者的角度客观审视你在学校里实际的同伴社交圈，选择哪张图更像你。';
+    document.getElementById('edSubtext').innerHTML =
+        '和之前一样，整个社交圈里有人你很熟悉、经常一起玩，有人是朋友的朋友，有人交集不多，但你能清楚看到他们与其他人的互动。整个组织里的同伴关系并非只有一种紧密程度。（图中共 '+s.N+' 人）<br>'+
+        '<span style="color:#e07020;">⚠ 请注意：本题描述的群体与第一部分所涉及的群体无关。</span>';
 
     // DC warning
     document.getElementById('dcWarnBar').style.display = 'none';
@@ -1579,6 +1588,7 @@ function edConfirm() {
 }
 
 function edConclude(k, concluded) {
+    edEndMs[edPhase - 1] = Date.now(); // record end of current phase
     edResults[edS.N] = {N:edS.N, finalK:k, concluded:concluded, history:edS.history.slice()};
     edPhase++;
     if (edPhase < edOrder.length) {
@@ -1601,6 +1611,9 @@ document.getElementById('btnEDStart').addEventListener('click', function(){
     edOrder = ED_ORDER_SETS[orderNum] || [6,8,10];
     edPhase = 0;
     edResults = {};
+    edStartMs = [0,0,0]; edEndMs = [0,0,0];
+    edSectionStartMs = Date.now();
+    edStartMs[0] = Date.now();
     edS = edInitState(edOrder[edPhase]);
     edRenderRound();
 });
@@ -1612,6 +1625,7 @@ document.getElementById('btnEDConfirm').addEventListener('click', function(){ ed
 document.getElementById('masterSkipBtn').addEventListener('click', function(){ runMasterSkip(); });
 document.getElementById('edTransNextBtn').addEventListener('click', function(){
     document.getElementById('pageEDTransition').style.display = 'none';
+    edStartMs[edPhase] = Date.now(); // record start of new phase
     edS = edInitState(edOrder[edPhase]);
     edRenderRound();
 });
@@ -1788,6 +1802,25 @@ async function autoUploadAndFinish(){
 
     // ── ego degree results ──
     row["ed_order"] = edOrder.map(function(n){return 'N'+n;}).join(',');
+
+    // ED timing — map by N value
+    var edDurByN = {};
+    for (var ei = 0; ei < edOrder.length; ei++) {
+        var nn2 = edOrder[ei];
+        var st = edStartMs[ei], en = edEndMs[ei];
+        edDurByN[nn2] = (st > 0 && en > st) ? msToStr(en - st) : '—';
+    }
+    var edTotalMs = 0;
+    for (var ei = 0; ei < edOrder.length; ei++) {
+        if (edStartMs[ei] > 0 && edEndMs[ei] > edStartMs[ei]) {
+            edTotalMs += edEndMs[ei] - edStartMs[ei];
+        }
+    }
+    row['ed_duration_n6']  = edDurByN[6]  || '—';
+    row['ed_duration_n8']  = edDurByN[8]  || '—';
+    row['ed_duration_n10'] = edDurByN[10] || '—';
+    row['ed_duration_total'] = edTotalMs > 0 ? msToStr(edTotalMs) : '—';
+
     [6,8,10].forEach(function(nn){
         var r = edResults[nn] || {finalK:null, concluded:false, history:[]};
         var sfx = '_n'+nn;
@@ -1808,9 +1841,11 @@ async function autoUploadAndFinish(){
         generateZIP(pngBlobs, date);
     } else {
         statusEl.innerHTML='<span style="color:#3a9a3a;">✓ 数据已成功上传，感谢参与！</span>';
-        dlBtn.style.display="inline-block"; dlBtn.style.background="#4a90d9"; dlBtn.textContent="下载本地备份（ZIP）";
+        dlBtn.style.display="inline-block"; dlBtn.style.background="#4a90d9"; dlBtn.textContent="⬇ 下载本地备份（ZIP）";
     }
-    dlBtn.onclick=function(){ generateZIP(pngBlobs, date); };
+    // save to outer scope so button always works
+    _zipPngBlobs = pngBlobs; _zipDate = date;
+    dlBtn.onclick = function(){ generateZIP(_zipPngBlobs, _zipDate); };
 }
 
 // ══════════════════════════════════════════════════
@@ -1841,6 +1876,7 @@ function buildCSVBytes(date){
     header.push("net_graph_t1","net_graph_t2","net_graph_t3");
     // ego degree columns
     header.push("ed_order");
+    header.push("ed_duration_n6","ed_duration_n8","ed_duration_n10","ed_duration_total");
     [6,8,10].forEach(function(nn){
         ["ed_final_k","ed_concluded","ed_history"].forEach(function(c){ header.push(c+"_n"+nn); });
     });
@@ -1863,6 +1899,8 @@ function buildCSVBytes(date){
              csvEsc(JSON.stringify(savedResults[2].graph)));
     // ego degree data
     row.push(csvEsc(edOrder.map(function(n){return 'N'+n;}).join(',')));
+    row.push(csvEsc(r2['ed_duration_n6']||'—'), csvEsc(r2['ed_duration_n8']||'—'),
+             csvEsc(r2['ed_duration_n10']||'—'), csvEsc(r2['ed_duration_total']||'—'));
     [6,8,10].forEach(function(nn){
         var r=edResults[nn]||{finalK:null,concluded:false,history:[]};
         row.push(r.finalK!==null&&r.finalK!==undefined?r.finalK:'');
